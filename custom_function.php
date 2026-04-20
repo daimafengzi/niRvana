@@ -235,7 +235,7 @@ add_filter('mce_external_plugins', function($plugin_array) {
 });
 
 /**
- * 将按钮添加至编辑器工具栏 (分布在第 2 排和第 3 排)
+ * 将按钮 add 至编辑器工具栏 (分布在第 2 排和第 3 排)
  */
 add_filter('mce_buttons_2', function($buttons) {
     $new_buttons = ['ni_h2', 'ni_h3', 'ni_h4', 'ni_pre', 'ni_info', 'ni_success', 'ni_warning', 'ni_table', 'ni_tr', 'ni_td'];
@@ -254,7 +254,7 @@ add_action('after_wp_tiny_mce', function() { ?>
             QTags.addButton('ni_h2', 'H2', "<h2>", "</h2>\n");
             QTags.addButton('ni_h3', 'H3', "<h3>", "</h3>\n");
             QTags.addButton('ni_code', '代码', "<pre>", "</pre>\n");
-            QTags.addButton('ni_table', '表格', "<figure class='table-figure'><table><thead><tr><th>标题</th><th>标题</th></tr></thead><tbody><tr><td>内容</td><td>内容</td></tr></tbody></table></figure>\n");
+            QTags.addButton('ni_table', '表格', "<figure class='table-figure'><table><thead><tr><th>标题一</th><th>标题二</th></tr></thead><tbody><tr><td>内容一</td><td>内容二</td></tr></tbody></table></figure>\n");
             QTags.addButton('ni_r2d', '回复下载', '[reply2down]', '[/reply2down]');
             QTags.addButton('ni_face', '表情', '[face p="1"]');
             QTags.addButton('ni_bili', 'B站视频', '[vbilibili]', '[/vbilibili]');
@@ -264,8 +264,46 @@ add_action('after_wp_tiny_mce', function() { ?>
 
 // 首图获取
 function catch_first_image($post_id = null) {
-    $content = $post_id ? get_post($post_id)->post_content : get_post()->post_content;
-    if (preg_match('/<img.+src=[\'"]([^\'"]+)[\'"].*>/i', $content, $m)) return $m[1];
+    if (!$post_id) {
+        global $post;
+        if (!$post || !isset($post->ID)) return get_stylesheet_directory_uri() . '/assets/imgs/rand/' . rand(1, 10) . '.png';
+        $post_id = $post->ID;
+    }
+    
+    $post_obj = get_post($post_id);
+    if (!$post_obj || empty($post_obj->post_content)) {
+        return get_stylesheet_directory_uri() . '/assets/imgs/rand/' . rand(1, 10) . '.png';
+    }
+    
+    // 1. 穿透权限短代码
+    $content = $post_obj->post_content;
+    $content = preg_replace('/\[(reply2down|need_reply|reply)[^\]]*\](.*?)\[\/\1\]/is', '$2', $content);
+    $content = htmlspecialchars_decode(wp_unslash($content));
+    $first_img = '';
+
+    // 2. 万能正则匹配图片 (src, img, 或者直接引用的链接)
+    if (preg_match('/(?:src|img|href)\s*=\s*[\'"]([^\'"]+\.(?:jpg|jpeg|gif|png|webp|bmp|svg)(?:\?[^\'"]*)?)[\'"]/i', $content, $matches)) {
+        $first_img = $matches[1];
+    }
+
+    // 3. 兜底：解析短代码后匹配 <img>
+    if (!$first_img) {
+        $parsed_content = htmlspecialchars_decode(do_shortcode($content));
+        if (preg_match('/<img\b[^>]+?src\s*=\s*[\'"]([^\'"]+)[\'"]/is', $parsed_content, $matches)) {
+            $first_img = $matches[1];
+        }
+    }
+    
+    // 4. 路径处理：自适应协议
+    if ($first_img) {
+        // 如果是相对路径 (以 / 开头)
+        if (strpos($first_img, 'http') !== 0 && strpos($first_img, '//') !== 0) {
+            $first_img = home_url($first_img);
+        }
+        // 自动适配当前站点的 HTTP/HTTPS 协议
+        return set_url_scheme($first_img);
+    }
+    
     return get_stylesheet_directory_uri() . '/assets/imgs/rand/' . rand(1, 10) . '.png';
 }
 

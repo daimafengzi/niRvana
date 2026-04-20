@@ -3,7 +3,7 @@ $posttype = get_post_type();
 switch ( $posttype ) {
     case 'post':
         if ( has_post_thumbnail() ) {
-            $thumbnail = get_the_post_thumbnail_url();
+            $thumbnail = set_url_scheme( get_the_post_thumbnail_url() );
         } else {
             $thumbnail = catch_first_image();
         }

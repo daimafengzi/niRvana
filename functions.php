@@ -785,22 +785,7 @@ function mytheme_nav_menu_css_class($classes)
     return $classes;
 }
 add_filter('nav_menu_css_class', 'mytheme_nav_menu_css_class');
-function showFace($atts, $content = null)
-{
-    extract(shortcode_atts(array(
-        "p" => '',
-        "g" => '',
-    ), $atts));
-    if ($p != '') {
-        $name = $p;
-        $format = 'png';
-    } else {
-        $name = $g;
-        $format = 'gif';
-    }
-    return '<img src=' . get_stylesheet_directory_uri() . '/faces/' . $name . '.' . $format . ' class="cmt_faces">';
-}
-add_shortcode("face", "showFace");
+
 // 头像镜像加速代理：通过前面定义的 get_avatar_url 过滤器自动处理
 add_filter('get_avatar', function($avatar, $id_or_email, $size, $default, $alt) {
     $url = get_avatar_url($id_or_email, array('size' => $size, 'default' => $default));
