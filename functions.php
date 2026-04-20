@@ -96,15 +96,7 @@ function niRvana_code_copy_assets() {
 }
 add_action('wp_enqueue_scripts', 'niRvana_code_copy_assets', 30);
 
-//自动更新
-require_once(get_template_directory() . '/theme-update-checker/plugin-update-checker.php');
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
-$niRvanaThemeUpdateChecker = PucFactory::buildUpdateChecker(
-    'https://github.com/daimafengzi/niRvana/',
-    get_template_directory() . '/functions.php',
-    'niRvana'
-);
 
 //文章图片灯箱
 function auto_post_link($content)
