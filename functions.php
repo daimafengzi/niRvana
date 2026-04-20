@@ -1764,4 +1764,13 @@ function pf_sidebar_init()
 include('custom_function.php');
 include('pandastudio_plugins/config_plugins.php');
 include('pandastudio_framework/config_framework.php');
+
+// 修复 niRvana 主题前台伪静态误报问题
+add_action('rest_api_init', function () {
+    register_rest_route('pandastudio/nirvana', '/restapi/', array(
+        'methods' => 'GET,POST',
+        'callback' => '__return_true',
+        'permission_callback' => '__return_true',
+    ));
+});
 ?>
