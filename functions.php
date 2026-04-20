@@ -262,7 +262,17 @@ function pf_custom_title_separator($sep)
 }
 function get_faces_from_dir()
 {
+    $cache_key = 'niRvana_faces_list';
+    $cached = get_transient($cache_key);
+    if ($cached !== false) {
+        return $cached;
+    }
+
     $dir = dirname(__FILE__) . "/faces";
+    if (!is_dir($dir)) {
+        return array();
+    }
+
     $handle = opendir($dir);
     $array_file = array();
     $allowExtensions = array(
@@ -283,6 +293,8 @@ function get_faces_from_dir()
         }
     }
     closedir($handle);
+    
+    set_transient($cache_key, $array_file, DAY_IN_SECONDS);
     return $array_file;
 }
 function _opt($optionName, $default = false)
@@ -293,7 +305,7 @@ function _opt($optionName, $default = false)
 function _eopt($optionName, $default = false)
 {
     $result = get_option($optionName);
-    echo $result ? $result : $default;
+    echo esc_html($result ? $result : $default);
 }
 function _meta($metaName, $default = false)
 {
@@ -303,7 +315,7 @@ function _meta($metaName, $default = false)
 function _emeta($metaName, $default = false)
 {
     $result = get_post_meta(get_the_ID(), $metaName, true);
-    echo $result ? $result : $default;
+    echo esc_html($result ? $result : $default);
 }
 function frontend_opts()
 {
@@ -726,16 +738,18 @@ function need_reply($atts, $content = null)
 add_shortcode('need_reply', 'need_reply');
 function pf_user_has_approved_comment_in_post($postID, $email)
 {
-    $comments = get_approved_comments($postID);
-    $has_approved_comments = false;
-    for ($i = 0; $i < count($comments); $i++) {
-        $cmt_email = $comments[$i]->comment_author_email;
-        if ($email == $cmt_email) {
-            $has_approved_comments = true;
-            break;
-        }
-    }
-    return $has_approved_comments;
+    if (empty($email)) return false;
+    global $wpdb;
+    $count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $wpdb->comments 
+         WHERE comment_post_ID = %d 
+         AND comment_author_email = %s 
+         AND comment_approved = '1' 
+         LIMIT 1",
+        $postID,
+        $email
+    ));
+    return $count > 0;
 }
 $directDownload_times = 0;
 function download_with_licence($atts, $content = null)

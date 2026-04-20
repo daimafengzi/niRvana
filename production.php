@@ -27,44 +27,55 @@ if ($is_production) {
         }
     });
 } else {
-    add_action('wp_enqueue_scripts', function () {
-        wp_enqueue_script('jquery');
-    });
-    add_action('wp_head', function () use ($theme_uri) {
-        echo '
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/bootstrap.min.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/bootstrap_xxs.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/bootstrap_24.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/bootstrap_xl.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/pdmessage-my.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/fontawesome.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/jv-element.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/user-center-login.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/style.css">
-<link rel="stylesheet" href="'.$theme_uri.'/assets/css/highlightjs.css">
-<script src="'.$theme_uri.'/assets/js/jquery-2.1.0.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/jQuery.forceCache.js"></script>
-<script src="'.$theme_uri.'/assets/js/jquery.mobile.custom.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/jquery-ui-custom-drag.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/jquery.custom-scrollbars.js"></script>
-<script src="'.$theme_uri.'/assets/js/jquery.qrcode.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/pdmessage.js"></script>
-<script src="'.$theme_uri.'/assets/js/bootstrap.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/color-thief.js"></script>
-<script src="'.$theme_uri.'/assets/js/stackblur.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/circleMagic.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/mustache.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/pandaSlider.js"></script>
-<script src="'.$theme_uri.'/assets/js/pandaTab.js"></script>
-<script src="'.$theme_uri.'/assets/js/pandaHooks.js"></script>
-<script src="'.$theme_uri.'/assets/js/jquery.vue.js"></script>
-<script src="'.$theme_uri.'/assets/js/jv-element.js"></script>
-<script src="'.$theme_uri.'/assets/js/user-center-login.js"></script>
-<script src="'.$theme_uri.'/assets/js/masonry.pkgd.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/jquery.imgcomplete.js"></script>
-<script src="'.$theme_uri.'/assets/js/highlight.min.js"></script>
-<script src="'.$theme_uri.'/assets/js/highlightjs-line-numbers.js"></script>
-<script src="'.$theme_uri.'/assets/js/theme.js"></script>
-';
+    add_action('wp_enqueue_scripts', function () use ($theme_uri, $theme_version) {
+        // 定义所有开发环境资源
+        $assets = [
+            'css' => [
+                'bootstrap' => 'assets/css/bootstrap.min.css',
+                'bootstrap-xxs' => 'assets/css/bootstrap_xxs.css',
+                'bootstrap-24' => 'assets/css/bootstrap_24.css',
+                'bootstrap-xl' => 'assets/css/bootstrap_xl.css',
+                'pdmessage' => 'assets/css/pdmessage-my.css',
+                'fontawesome' => 'assets/css/fontawesome.css',
+                'jv-element' => 'assets/css/jv-element.css',
+                'user-center' => 'assets/css/user-center-login.css',
+                'main-style' => 'assets/css/style.css',
+                'highlightjs' => 'assets/css/highlightjs.css',
+            ],
+            'js' => [
+                'jquery-v2' => ['path' => 'assets/js/jquery-2.1.0.min.js', 'dep' => []],
+                'force-cache' => ['path' => 'assets/js/jQuery.forceCache.js', 'dep' => ['jquery-v2']],
+                'jquery-mobile' => ['path' => 'assets/js/jquery.mobile.custom.min.js', 'dep' => ['jquery-v2']],
+                'jquery-ui-drag' => ['path' => 'assets/js/jquery-ui-custom-drag.min.js', 'dep' => ['jquery-v2']],
+                'scrollbars' => ['path' => 'assets/js/jquery.custom-scrollbars.js', 'dep' => ['jquery-v2']],
+                'qrcode' => ['path' => 'assets/js/jquery.qrcode.min.js', 'dep' => ['jquery-v2']],
+                'pdmessage' => ['path' => 'assets/js/pdmessage.js', 'dep' => ['jquery-v2']],
+                'bootstrap' => ['path' => 'assets/js/bootstrap.min.js', 'dep' => ['jquery-v2']],
+                'color-thief' => ['path' => 'assets/js/color-thief.js', 'dep' => ['jquery-v2']],
+                'stackblur' => ['path' => 'assets/js/stackblur.min.js', 'dep' => ['jquery-v2']],
+                'circlemagic' => ['path' => 'assets/js/circleMagic.min.js', 'dep' => ['jquery-v2']],
+                'mustache' => ['path' => 'assets/js/mustache.min.js', 'dep' => []],
+                'panda-slider' => ['path' => 'assets/js/pandaSlider.js', 'dep' => ['jquery-v2']],
+                'panda-tab' => ['path' => 'assets/js/pandaTab.js', 'dep' => ['jquery-v2']],
+                'panda-hooks' => ['path' => 'assets/js/pandaHooks.js', 'dep' => ['jquery-v2']],
+                'jquery-vue' => ['path' => 'assets/js/jquery.vue.js', 'dep' => ['jquery-v2']],
+                'jv-element' => ['path' => 'assets/js/jv-element.js', 'dep' => ['jquery-v2']],
+                'user-center' => ['path' => 'assets/js/user-center-login.js', 'dep' => ['jquery-v2']],
+                'masonry' => ['path' => 'assets/js/masonry.pkgd.min.js', 'dep' => ['jquery-v2']],
+                'imgcomplete' => ['path' => 'assets/js/jquery.imgcomplete.js', 'dep' => ['jquery-v2']],
+                'highlight' => ['path' => 'assets/js/highlight.min.js', 'dep' => []],
+                'highlight-ln' => ['path' => 'assets/js/highlightjs-line-numbers.js', 'dep' => ['highlight']],
+                'theme-main' => ['path' => 'assets/js/theme.js', 'dep' => ['jquery-v2']],
+            ]
+        ];
+
+        if (!is_admin() && !is_login_page()) {
+            foreach ($assets['css'] as $handle => $rel_path) {
+                wp_enqueue_style($handle, $theme_uri . '/' . $rel_path, [], $theme_version);
+            }
+            foreach ($assets['js'] as $handle => $data) {
+                wp_enqueue_script($handle, $theme_uri . '/' . $data['path'], $data['dep'], $theme_version, true);
+            }
+        }
     });
 }

@@ -12,11 +12,18 @@ add_filter('use_block_editor_for_post_type', '__return_false');
 // 移除区块全局样式
 remove_action('wp_enqueue_scripts', 'wp_common_block_scripts_and_styles');
 
-// 禁用 Emoji
 remove_action('wp_head', 'print_emoji_detection_script', 7);
 remove_action('admin_print_scripts', 'print_emoji_detection_script');
 remove_action('wp_print_styles', 'print_emoji_styles');
 remove_action('admin_print_styles', 'print_emoji_styles');
+
+// 移除头部冗余链接
+remove_action('wp_head', 'rsd_link');
+remove_action('wp_head', 'wlwmanifest_link');
+remove_action('wp_head', 'wp_generator');
+remove_action('wp_head', 'wp_shortlink_wp_head');
+remove_action('wp_head', 'rest_output_link_wp_head', 10);
+remove_action('wp_head', 'wp_oembed_add_discovery_links', 10);
 
 // 禁用 XML-RPC 和 Pingback
 add_filter('xmlrpc_enabled', '__return_false');
@@ -34,11 +41,19 @@ if (!defined('DISALLOW_FILE_EDIT')) {
 function remove_category_base() {
     global $wp_rewrite;
     $wp_rewrite->extra_permastructs['category']['struct'] = '%category%';
-    add_action('created_category', 'flush_rewrite_rules');
-    add_action('edited_category', 'flush_rewrite_rules');
-    add_action('delete_category', 'flush_rewrite_rules');
 }
 add_action('init', 'remove_category_base');
+
+// 只有在必要时刷新重写规则，避免每次保存分类都执行高耗能操作
+function nirvana_flush_rules_on_change() {
+    if (!get_transient('nirvana_flush_rules')) {
+        set_transient('nirvana_flush_rules', true, HOUR_IN_SECONDS);
+        flush_rewrite_rules();
+    }
+}
+add_action('created_category', 'nirvana_flush_rules_on_change');
+add_action('edited_category', 'nirvana_flush_rules_on_change');
+add_action('delete_category', 'nirvana_flush_rules_on_change');
 
 // ================== 3. 文章功能优化 ==================
 
