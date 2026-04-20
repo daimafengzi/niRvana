@@ -1879,11 +1879,23 @@ function pf_nirvana_restapi_handler($request)
     return new WP_Error('rest_forbidden', '非法的执行请求或函数不存在。', array('status' => 403));
 }
 
-add_action('rest_api_init', function () {
-    register_rest_route('pandastudio/nirvana', '/restapi/', array(
-        'methods'  => 'GET,POST',
-        'callback' => 'pf_nirvana_restapi_handler',
-        'permission_callback' => '__return_true',
-    ));
 });
+
+// 优化：DNS 预获取，加速 CDN 解析
+function niRvana_dns_prefetch() {
+    $home_url = home_url();
+    $parsed_url = parse_url($home_url);
+    $host = isset($parsed_url['host']) ? $parsed_url['host'] : '';
+    echo '<link rel="dns-prefetch" href="//' . $host . '">';
+    echo '<link rel="dns-prefetch" href="//cravatar.cn">';
+}
+add_action('wp_head', 'niRvana_dns_prefetch', 0);
+
+// 优化：强制全局图片延迟加载
+function niRvana_lazyload_images($content) {
+    if (is_admin()) return $content;
+    return str_replace('<img ', '<img loading="lazy" ', $content);
+}
+add_filter('the_content', 'niRvana_lazyload_images', 99);
+add_filter('post_thumbnail_html', 'niRvana_lazyload_images', 99);
 ?>

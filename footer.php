@@ -44,7 +44,7 @@
 	<script type="text/html" jQVue-template="post_list">
 		{{#data}}<div class="col-xxs-6 col-xs-4 col-md-3 post-card-wrapper">
 			<div class="card">
-				{{#thumbnail}}<a href="{{href}}" class="cover" style="background-image: url({{thumbnail}});" showas='padding'></a><a href="{{href}}" showas='img'><img src="{{thumbnail}}" class="cover" alt=""></a>
+				{{#thumbnail}}<a href="{{href}}" class="cover" style="background-image: url({{thumbnail}});" showas='padding'></a><a href="{{href}}" showas='img'><img src="{{thumbnail}}" class="cover" alt="" loading="lazy"></a>
 				{{/thumbnail}}<div class="meta">
 					<div class="date">{{date}}</div>
 					<h2><a href="{{href}}">{{title}}</a></h2>
