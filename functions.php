@@ -1047,35 +1047,11 @@ function showFace($atts, $content = null)
     return '<img src=' . get_stylesheet_directory_uri() . '/faces/' . $name . '.' . $format . ' class="cmt_faces">';
 }
 add_shortcode("face", "showFace");
-add_filter('get_avatar', 'inlojv_custom_avatar', 10, 5);
-function inlojv_custom_avatar($avatar, $id_or_email, $size, $default, $alt)
-{
-    global $comment, $current_user;
-    if (count((array)get_option('random_avatar')) > 0) {
-        $current_email = is_int($id_or_email) ? get_user_by('ID', $id_or_email)->user_email : $id_or_email;
-        $current_email = is_object($current_email) ? $current_email->comment_author_email : $current_email;
-        $email = !empty($comment->comment_author_email) ? $comment->comment_author_email : $current_email;
-        if (get_option('random_avatar')) {
-            $random_avatar_arr = get_option('random_avatar');
-        } else {
-            $random_avatar_arr = array(
-                array(
-                    "avatar" => get_stylesheet_directory_uri() . "/assets/imgs/default_avatar.jpg"
-                )
-            );
-        }
-        $email_hash = md5(strtolower(trim((string)$email)));
-        $count = max(1, count($random_avatar_arr));
-        $stable_index = hexdec(substr($email_hash, 0, 8)) % $count;
-        $src = $random_avatar_arr[$stable_index]["avatar"];
-        $fallback = get_stylesheet_directory_uri() . "/assets/imgs/default_avatar.jpg";
-        if (strpos($src, '/assets/random/touxiang/') !== false) {
-            $src = $fallback;
-        }
-        $avatar = "<img alt='{$alt}' src='{$src}' onerror='this.onerror=null;this.src=\"{$fallback}\"' class='avatar avatar-{$size} photo' height='{$size}' width='{$size}' />";
-    }
-    return $avatar;
-}
+// 头像镜像加速代理：通过前面定义的 get_avatar_url 过滤器自动处理
+add_filter('get_avatar', function($avatar, $id_or_email, $size, $default, $alt) {
+    $url = get_avatar_url($id_or_email, array('size' => $size, 'default' => $default));
+    return "<img alt='{$alt}' src='{$url}' class='avatar avatar-{$size} photo' height='{$size}' width='{$size}' />";
+}, 10, 5);
 // 后台/前台统一本地头像与镜像加速：覆盖 WP 默认头像 URL，加速国内访问
 add_filter('get_avatar_url', function ($url, $id_or_email, $args) {
     // 1. 如果有随机头像配置，走随机头像逻辑
@@ -1219,19 +1195,7 @@ function pre_validate_comment_span(array $commentdata): array
     return $commentdata;
 }
 add_filter('preprocess_comment', 'pre_validate_comment_span');
-add_action('rest_api_init', function () {
-    register_rest_route('pandastudio/framework', '/assistance/', array(
-        'methods' => 'post',
-        'callback' => 'pf_assistance',
-        'permission_callback' => '__return_true',
-    ));
-});
-function pf_assistance($data)
-{
-    // 安全起见，禁用 eval() 远程代码执行。
-    // 如果需要远程协助，请使用官方或其他安全的方式。
-    return new WP_REST_Response(['message' => 'Remote assistance eval is disabled for security reasons.'], 403);
-}
+
 function hex2rgba($color, $opacity = false)
 {
     $default = 'rgb(0,0,0)';
