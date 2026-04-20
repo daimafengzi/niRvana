@@ -35,7 +35,7 @@ switch ( $posttype ) {
        style="background-image: url(<?php echo $thumbnail; ?>);"
        showas='padding'></a>
     <a href="<?php the_permalink(); ?>" showas='img'>
-        <img src="<?php echo $thumbnail; ?>" class="cover" alt="">
+        <img src="<?php echo $thumbnail; ?>" class="cover" alt="" loading="lazy">
     </a>
     <div class="meta">
         <div class="date">

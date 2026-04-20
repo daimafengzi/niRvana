@@ -654,6 +654,10 @@ function panda_seo()
         } else {
             $seo_description = "";
         }
+    } elseif (is_category() || is_tag()) {
+        $term = get_queried_object();
+        $seo_keywords = $term->name;
+        $seo_description = $term->description ? wp_strip_all_tags($term->description) : get_option('seo_site_description');
     } else {
         $seo_keywords = get_option('seo_site_keywords');
         $seo_description = get_option('seo_site_description');
