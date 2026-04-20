@@ -2,9 +2,11 @@
 global $carousels_attrs, $carousels_contents;
 $safe_carousels = array();
 for ( $i = 0; $i < count( $carousels_contents ); $i++ ) {
-	if ( $carousels_contents[ $i ]['slider_img'] ) {
-		$safe_carousels[] = $carousels_contents[ $i ];
+	if ( ! $carousels_contents[ $i ]['slider_img'] ) {
+		// 如果没有专门的幻灯片图，则尝试特色图 -> 内容首图 -> 随机图
+		$carousels_contents[ $i ]['slider_img'] = catch_first_image( $carousels_contents[ $i ]['id'] );
 	}
+	$safe_carousels[] = $carousels_contents[ $i ];
 }
 ?>
 <div class="container coverflow-wrapper dark-slider">

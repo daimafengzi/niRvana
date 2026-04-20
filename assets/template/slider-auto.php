@@ -5,6 +5,9 @@ global $carousels_attrs;
 	<div pandaSlider id="coverflow" prev-text='<i class="fas fa-arrow-left"></i>' next-text='<i class="fas fa-arrow-right"></i>' view="1" class="unfull" type="auto" allow-anchor-click <?php echo $carousels_attrs; ?>>
 		<?php
 		foreach ( $carousels_contents as $item ) {
+			if ( ! $item['cover_img'] ) {
+				$item['cover_img'] = catch_first_image( $item['id'] );
+			}
 			?>
 			<div class="page <?php echo ( $item['head_img'] ? 'hasHeadImg' : '' ); ?>" post-id="<?php echo $item['id']; ?>" headImg="<?php echo $item['head_img']; ?>">
 				<div class="container flex-row-middle coverflow">

@@ -248,19 +248,26 @@ function noplugin_indexnow($post_id, $post, $update) {
 // 支持外链缩略图
 add_theme_support('post-thumbnails');
 
-// 获取第一张图片（优化版）
-function catch_first_image() {
-    global $post;
-    $content = $post->post_content;
-
-    if (preg_match('/<img.+src=[\'"]([^\'"]+)[\'"].*>/i', $content, $matches)) {
-        $src = $matches[1];
-        // 验证图片是否存在（可选）
-        return $src;
+// 获取第一张图片（增强版：支持传入 ID 和随机逻辑）
+function catch_first_image( $post_id = null ) {
+    if ( $post_id ) {
+        $post_obj = get_post( $post_id );
+        $content = $post_obj->post_content;
+    } else {
+        global $post;
+        $content = $post->post_content;
     }
 
-    // 无首图时返回主题内固定占位图
-    return get_stylesheet_directory_uri() . '/assets/imgs/chat_me.png';
+    // 1. 尝试抓取文章内第一张图
+    if (preg_match('/<img.+src=[\'"]([^\'"]+)[\'"].*>/i', $content, $matches)) {
+        return $matches[1];
+    }
+
+    // 2. 如果文章没图，使用随机图（1-10.png）
+    $random_id = rand(1, 10);
+    $random_path = get_stylesheet_directory_uri() . '/assets/imgs/rand/' . $random_id . '.png';
+    
+    return $random_path;
 }
 
 // 评论用户不走缓存

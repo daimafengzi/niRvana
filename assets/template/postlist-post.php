@@ -2,8 +2,12 @@
 $posttype = get_post_type();
 switch ( $posttype ) {
     case 'post':
-        $thumbnail = get_the_post_thumbnail_url();
-        $tags      = get_the_tags();
+        if ( has_post_thumbnail() ) {
+            $thumbnail = get_the_post_thumbnail_url();
+        } else {
+            $thumbnail = catch_first_image();
+        }
+        $tags = get_the_tags();
         break;
     case 'gallery':
         $gallery_images = get_post_meta( get_the_id(), 'gallery_images', true );
