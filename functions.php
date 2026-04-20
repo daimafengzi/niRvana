@@ -133,8 +133,15 @@ add_action('login_head', 'custom_login_head');
 function count_words_read_time()
 {
     global $post;
-    $text_num = mb_strlen(preg_replace('/\s/', '', html_entity_decode(strip_tags($post->post_content))), 'UTF-8');
-    $read_time = ceil($text_num / 300); // 修改数字300调整时间
+    $post_id = $post->ID;
+    $text_num = get_post_meta($post_id, '_niRvana_word_count', true);
+    $read_time = get_post_meta($post_id, '_niRvana_read_time', true);
+
+    if ($text_num === '' || $read_time === '') {
+        $text_num = mb_strlen(preg_replace('/\s/', '', html_entity_decode(strip_tags($post->post_content))), 'UTF-8');
+        $read_time = ceil($text_num / 300);
+    }
+
     $output = '本文共' . $text_num . '个字 · 预计阅读' . $read_time  . '分钟';
     return $output;
 }
@@ -1567,59 +1574,37 @@ function allow_key($len, $delay)
 */
 function pf_insert_rand($content)
 {
-    global $pf_dirty_selector;
     if (!(is_single() && is_main_query())) {
         return $content;
     }
-    preg_match_all("/[\x01-\x7f]|[\xe0-\xef][\x80-\xbf]{2}/", $content, $match);
-    $match = $match[0];
-    $len = count($match, 0);
-    $delay = [];
-    $add = 0;
-    foreach ($match as $k => $v) {
-        if ($v == '<' || $v == '[') {
-            $add = 1;
-        };
-        if ($add == 1) {
-            $delay[] = $k;
-        };
-        if ($v == '>' || $v == ']') {
-            $add = 0;
-        };
+
+    // 优化：将原来的字符级扫描改为段落/大块级扫描，极大提升效率
+    $paragraphs = preg_split('/(<\/p>|<\/div>|<\/h[1-6]>)/i', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+    if (count($paragraphs) < 2) {
+        return $content;
     }
-    foreach ($match as $k => $v) {
-        if ($v == '<' && $match[$k + 1] == 'p' && $match[$k + 2] == 'r' && $match[$k + 3] == 'e') {
-            $add = 1;
-        };
-        if ($add == 1) {
-            $delay[] = $k;
-        };
-        if ($v == '>' && $match[$k - 1] == 'e' && $match[$k - 2] == 'r' && $match[$k - 3] == 'p') {
-            $add = 0;
-        };
-    }
-    foreach ($match as $k => $v) {
-        if ($v == '<' && $match[$k + 1] == 'b' && $match[$k + 2] == 'u' && $match[$k + 3] == 't') {
-            $add = 1;
-        };
-        if ($add == 1) {
-            $delay[] = $k;
-        };
-        if ($v == '>' && $match[$k - 1] == 't' && $match[$k - 2] == 'u' && $match[$k - 3] == 'b') {
-            $add = 0;
-        };
-    }
-    $insert = dirty_data();
-    if (is_array($insert)) {
-        foreach ($insert as $k => $v) {
-            $key = allow_key($len - 1, $delay);
-            $match[$key] .= $insert[$k];
+
+    $insert_data = dirty_data();
+    $insert_count = count($insert_data);
+    if ($insert_count === 0) return $content;
+
+    // 确定插入间隔，确保均匀分布
+    $step = max(1, floor(count($paragraphs) / ($insert_count * 2)));
+    $result = '';
+    $inserted = 0;
+
+    for ($i = 0; $i < count($paragraphs); $i++) {
+        $result .= $paragraphs[$i];
+        // 在特定间隔后的闭合标签后插入内容
+        if ($i > 0 && ($i % 2 !== 0) && ($inserted < $insert_count) && (($i / 2) % $step === 0)) {
+            // 排除 pre 内部（简单判断）
+            if (strpos($paragraphs[$i-1], '<pre') === false) {
+                $result .= $insert_data[$inserted];
+                $inserted++;
+            }
         }
-    } else {
-        $key = allow_key($len - 1, $delay);
-        $match[$key] .= $insert;
     }
-    $result = implode('', $match);
+    
     return $result;
 }
 if (_opt('anti_copy') == 'checked') {
@@ -1686,10 +1671,14 @@ function string_to_int8($string)
 function get_topSlider($postIds = array(), $type = false)
 {
     global $carousels_attrs, $carousels_contents;
-    if ($type) {
-    } else {
-        return false;
+    if (!$type) return false;
+
+    $cache_key = 'niRvana_topslider_' . md5(serialize($postIds) . $type);
+    if ($cached_html = get_transient($cache_key)) {
+        echo $cached_html;
+        return;
     }
+
     if (gettype($postIds) == "array") {
         $carousels_contents = array();
         $isFullCategory = _opt('show_full_category', false);
@@ -1707,18 +1696,22 @@ function get_topSlider($postIds = array(), $type = false)
             );
         }
     } else {
-        echo "滚动图片传入的数据错误！";
         return false;
     }
-    if (count($carousels_contents) == 0) {
-        return false;
-    }
+
+    if (count($carousels_contents) == 0) return false;
+
     $carousels_attrs = "interval-time='" . _opt('carousels_interval_time', '0') . "'";
     _opt('carousels_hover_disable_interval') ? $carousels_attrs .= " hover-disable-interval" : '';
     _opt('carousels_show_anchor') ? $carousels_attrs .= " show-anchor" : '';
     _opt('carousels_allow_keyboard') ? $carousels_attrs .= " allow-keyboard" : '';
     _opt('carousels_allow_swipe') ? $carousels_attrs .= " allow-swipe" : '';
+
+    ob_start();
     include('assets/template/slider-' . $type . '.php');
+    $html = ob_get_clean();
+    set_transient($cache_key, $html, 12 * HOUR_IN_SECONDS);
+    echo $html;
 }
 function get_gallery_slider($postId = 0, $type = false)
 {
@@ -1779,8 +1772,10 @@ function get_category_text($pid, $showFull = false, $separate = ' / ')
     if ($showFull) {
         $catArr = array();
         $categorys = get_the_category($pid);
-        foreach ($categorys as $cat) {
-            $catArr[] = $cat->cat_name;
+        if ($categorys) {
+            foreach ($categorys as $cat) {
+                $catArr[] = $cat->cat_name;
+            }
         }
         $categoryText = implode($separate, $catArr);
     } else {
@@ -1791,20 +1786,29 @@ function get_category_text($pid, $showFull = false, $separate = ' / ')
     }
     return $categoryText;
 }
+
 if (!function_exists('utf8Substr')) {
     function utf8Substr($str, $from, $len)
     {
         return preg_replace(
             '#^(?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,'.$from.'}'.
-'((?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,'.$len.'}).*#s',
+            '((?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,'.$len.'}).*#s',
             '$1',
             $str
         );
     }
 }
+
 function get_the_description($pid, $trim_words = 150)
 {
+    $cached_desc = get_post_meta($pid, '_niRvana_cached_description', true);
+    if (!empty($cached_desc)) {
+        return $cached_desc;
+    }
+
     $post = get_post($pid);
+    if (!$post) return '';
+
     if (get_post_meta($post->ID, 'description', true)) {
         $description = get_post_meta($post->ID, 'description', true);
     }
@@ -1812,14 +1816,42 @@ function get_the_description($pid, $trim_words = 150)
         if ($post->post_excerpt) {
             $description  = $post->post_excerpt;
         } else {
-            // 优化：先移除短代码，再移除 HTML 标签，性能更好且描述更干净
             $post_content = strip_tags(strip_shortcodes($post->post_content));
             $description = (function_exists('mb_substr')) ? mb_substr($post_content, 0, $trim_words, 'utf-8') : substr($post_content, 0, $trim_words);
         }
     }
     $description = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $description);
-    return esc_attr(trim($description)) . '...';
+    $result = esc_attr(trim($description)) . '...';
+    
+    update_post_meta($pid, '_niRvana_cached_description', $result);
+    return $result;
 }
+
+// 优化：文章保存时预计算所有重资源消耗的元数据
+function niRvana_precalculate_post_meta($post_id) {
+    if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) return;
+    
+    $post = get_post($post_id);
+    if (!$post || $post->post_status !== 'publish') return;
+
+    // 1. 字数与阅读时间
+    $text_content = preg_replace('/\s/', '', html_entity_decode(strip_tags($post->post_content)));
+    $text_num = mb_strlen($text_content, 'UTF-8');
+    $read_time = ceil($text_num / 300);
+    update_post_meta($post_id, '_niRvana_word_count', $text_num);
+    update_post_meta($post_id, '_niRvana_read_time', $read_time);
+
+    // 2. 描述信息
+    $post_content_clean = strip_tags(strip_shortcodes($post->post_content));
+    $description = mb_substr($post_content_clean, 0, 150, 'utf-8');
+    $description = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $description);
+    update_post_meta($post_id, '_niRvana_cached_description', esc_attr(trim($description)) . '...');
+
+    // 3. 清除相关滑灯缓存
+    global $wpdb;
+    $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_niRvana_topslider_%'");
+}
+add_action('save_post', 'niRvana_precalculate_post_meta');
 
 // 优化：Gravatar 头像国内加速
 function niRvana_get_cravatar($avatar) {

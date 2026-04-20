@@ -272,16 +272,41 @@ function catch_first_image( $post_id = null ) {
         $content = $post->post_content;
     }
 
+    $img_url = '';
+
     // 1. 尝试抓取文章内第一张图
     if (preg_match('/<img.+src=[\'"]([^\'"]+)[\'"].*>/i', $content, $matches)) {
-        return $matches[1];
+        $img_url = $matches[1];
+    } else {
+        // 2. 如果文章没图，使用随机图（1-10.png）
+        $random_id = rand(1, 10);
+        $img_url = get_stylesheet_directory_uri() . '/assets/imgs/rand/' . $random_id . '.png';
     }
 
-    // 2. 如果文章没图，使用随机图（1-10.png）
-    $random_id = rand(1, 10);
-    $random_path = get_stylesheet_directory_uri() . '/assets/imgs/rand/' . $random_id . '.png';
-    
-    return $random_path;
+    // 优化：确保域名适配当前环境（处理从 localhost 迁移或 CDN 域名变动）
+    if (strpos($img_url, 'http') === 0) {
+        $home_url = home_url();
+        $site_host = parse_url($home_url, PHP_URL_HOST);
+        $img_host = parse_url($img_url, PHP_URL_HOST);
+        
+        if ($img_host && $img_host !== $site_host) {
+            // 如果图片域名与当前站点不一致（且不是外部 CDN），则尝试替换
+            // 排除主流公共 CDN 域名（根据需要添加）
+            $common_cdns = ['qiniucdn.com', 'aliyuncs.com', 'myqcloud.com'];
+            $is_external = false;
+            foreach ($common_cdns as $cdn) {
+                if (strpos($img_host, $cdn) !== false) {
+                    $is_external = true;
+                    break;
+                }
+            }
+            if (!$is_external) {
+                $img_url = str_replace($img_host, $site_host, $img_url);
+            }
+        }
+    }
+
+    return $img_url;
 }
 
 // 评论用户不走缓存
