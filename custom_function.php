@@ -112,8 +112,7 @@ add_action('after_wp_tiny_mce', function() { ?>
 		QTags.addButton( 'download', '下载按钮', "[download]", "[/download]\n" );
 		QTags.addButton( 'collapse', '折叠面板', "[collapse btn_label=\"点击展开\"]内容[/collapse]\n" );
     </script>
-<?php });
-
+<?php }); // ================== 冗余样式已迁移至外部文件 ==================
 add_action('admin_init', function() {
     if (!current_user_can('edit_posts') && !current_user_can('edit_pages')) return;
     if (get_user_option('rich_editing') == 'true') {
@@ -136,7 +135,7 @@ add_shortcode('vbilibili', function($atts, $content = null) {
     $p = 1;
     if (preg_match('/p=(\d+)/', $content, $matches)) { $p = $matches[1]; }
     return '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:20px 0;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.1);background:#000;">
-                <iframe src="//player.bilibili.com/player.html?bvid='.$id.'&page='.$p.'&high_quality=1&danmaku=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+                <iframe src="//player.bilibili.com/player.html?bvid='.$id.'&page='.$p.'&high_quality=1&danmaku=0" loading="lazy" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
             </div>';
 });
 
