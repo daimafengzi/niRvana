@@ -18,8 +18,7 @@ function niRvana_enqueue_assets()
 {
     $theme_uri = get_template_directory_uri();
     
-    // Header CSS
-    wp_enqueue_style('niRvana-extend', $theme_uri . '/extend/css/style.css', array(), null);
+    // Header CSS (主要资源由 production.php 统一管理，此处仅保留必须的额外资源)
     wp_enqueue_style('font-awesome', $theme_uri . '/pandastudio_framework/assets/css/font-awesome.css', array(), '5.15.4');
 
     // Footer JS
@@ -791,48 +790,40 @@ function my_upload_mimes($mimes = array())
     $mimes['zip'] = 'application/zip';
     return $mimes;
 }
-function mytheme_comment($comment, $args, $depth)
-{
+function mytheme_comment($comment, $args, $depth) {
     if ('div' === $args['style']) {
         $tag = 'div';
         $add_below = 'comment';
     } else {
         $tag = 'li';
         $add_below = 'div-comment';
-    } ?>
-<<?php echo $tag; ?>
-	<?php comment_class(empty($args['has_children']) ? '' : 'parent') ?>
-	id="comment-<?php comment_ID() ?>">
-	<?php if ('div' != $args['style']) : ?>
-	<div id="div-comment-<?php comment_ID() ?>"
-		class="comment-body clearfix">
-		<?php endif; ?>
-		<?php if ($args['avatar_size'] != 0) {
-		    echo get_avatar($comment, $args['avatar_size']);
-		} ?>
-		<div class="comment-author vcard">
-			<div class="meta">
-				<?php printf(__('<span class="name">%s</span>'), get_comment_author_link()); ?>
-				<?php printf(__('<span class="date">%1$s · %2$s</span>'), get_comment_date('Y-n-j'), get_comment_time('G:i')); ?>
-			</div>
-			<?php if ($comment->comment_approved == '0') : ?>
-			<em
-				class="comment-awaiting-moderation"><?php _e('评论正在等待管理员审核...'); ?></em>
-			<br />
-			<?php endif; ?>
-			<div class="comment-text"><?php comment_text(); ?></div>
-			<div class="reply">
-				<?php $args['reply_text'] = '' ?>
-				<div title="<?php echo get_option('comment_reply_tooltip'); ?>"
-					data-toggle="tooltip" class="comment-reply-link-wrap">
-					<?php comment_reply_link(array_merge($args, array( 'add_below' => $add_below, 'depth' => $depth, 'max_depth' => $args['max_depth'] ))); ?>
-				</div>
-			</div>
-		</div>
-		<?php if ('div' != $args['style']) : ?>
-	</div>
-	<?php endif; ?>
-	<?php
+    }
+    ?>
+    <<?php echo $tag; ?> <?php comment_class(empty($args['has_children']) ? '' : 'parent') ?> id="comment-<?php comment_ID() ?>">
+    <?php if ('div' != $args['style']) : ?>
+    <div id="div-comment-<?php comment_ID() ?>" class="comment-body clearfix">
+    <?php endif; ?>
+        <?php if ($args['avatar_size'] != 0) echo get_avatar($comment, $args['avatar_size']); ?>
+        <div class="comment-author vcard">
+            <div class="meta">
+                <?php printf(__('<span class="name">%s</span>'), get_comment_author_link()); ?>
+                <?php printf(__('<span class="date">%1$s · %2$s</span>'), get_comment_date('Y-n-j'), get_comment_time('G:i')); ?>
+            </div>
+            <?php if ($comment->comment_approved == '0') : ?>
+                <em class="comment-awaiting-moderation"><?php _e('评论正在等待管理员审核...'); ?></em><br />
+            <?php endif; ?>
+            <div class="comment-text"><?php comment_text(); ?></div>
+            <div class="reply">
+                <?php $args['reply_text'] = ''; ?>
+                <div title="<?php echo get_option('comment_reply_tooltip'); ?>" data-toggle="tooltip" class="comment-reply-link-wrap">
+                    <?php comment_reply_link(array_merge($args, array('add_below' => $add_below, 'depth' => $depth, 'max_depth' => $args['max_depth']))); ?>
+                </div>
+            </div>
+        </div>
+    <?php if ('div' != $args['style']) : ?>
+    </div>
+    <?php endif; ?>
+    <?php
 }
 add_filter("get_comment_author_link", "pf_new_windows_comment_author");
 function pf_new_windows_comment_author($author_link)

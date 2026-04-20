@@ -140,7 +140,37 @@ add_shortcode('vbilibili', function($atts, $content = null) {
 });
 
 add_shortcode('download', function($atts, $content = null) {
-    return '<div class="ni-download-box"><a href="'.trim($content).'" target="_blank" class="ni-download-btn">立即下载</a></div>';
+    static $directDownload_times = 0;
+    $directDownload_times++;
+    
+    // 获取后台定义的版权说明
+    $licence = get_option('版权说明');
+    if (!$licence) {
+        $licence = '<p>本站提供的下载内容版权归本站所有。转载 <span style="color:#ff7800">必须</span> 注明出处！</p><p style="font-size:80%; color:#888;">* 标有 “转载” 字样的文章，内容版权归原作者所有。</p>';
+    } else {
+        $licence = wpautop(str_ireplace('img', 'div', $licence));
+    }
+
+    // 渲染 NiRvana 特色的双层按钮结构
+    return '
+    <div type="button" class="getit" data-toggle="modal" data-target="#directDownload_'.$directDownload_times.'">
+        <a style="cursor:pointer;"><span>Get it!</span><span>Download</span></a>
+    </div>
+    <div class="modal fade" id="directDownload_'.$directDownload_times.'" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">下载提示与版权说明</h4>
+                </div>
+                <div class="modal-body">'.$licence.'</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">不同意</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick=window.open("'.trim($content).'")>同意并下载</button>
+                </div>
+            </div>
+        </div>
+    </div>';
 });
 
 add_shortcode('collapse', function($atts, $content = null) {
