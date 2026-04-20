@@ -1879,6 +1879,13 @@ function pf_nirvana_restapi_handler($request)
     return new WP_Error('rest_forbidden', '非法的执行请求或函数不存在。', array('status' => 403));
 }
 
+
+add_action('rest_api_init', function () {
+    register_rest_route('pandastudio/nirvana', '/restapi/', array(
+        'methods'  => 'GET,POST',
+        'callback' => 'pf_nirvana_restapi_handler',
+        'permission_callback' => '__return_true',
+    ));
 });
 
 // 优化：DNS 预获取，加速 CDN 解析
