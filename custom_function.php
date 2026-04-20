@@ -26,14 +26,8 @@ add_filter('xmlrpc_methods', function ($methods) {
 // 集成文章表格美化样式
 add_action('wp_head', function() {
     ?>
-    <style id="niRvana-table-style">
-    .table-figure { border: 1px solid #ccc; border-radius: 5px; padding: 10px; margin-bottom: 20px; overflow-x: auto; }
-    .table-figure table { width: 100%; border-collapse: collapse; min-width: 400px; }
-    .table-figure th, .table-figure td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #eee; }
-    .table-figure thead { background-color: #f2f2f2; }
-    .table-figure th { font-weight: bold; color: #333; }
-    .table-figure tbody tr:nth-child(even) { background-color: #f9f9f9; }
-    .table-figure tbody tr:hover { background-color: #f5f5f5; transition: background 0.2s; }
+    <style id="niRvana-custom-style">
+    /* 样式已迁移至 extend/css/style.css */
     </style>
     <?php
 }, 100);

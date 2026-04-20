@@ -24,6 +24,7 @@ if ($is_production) {
         if (!is_admin() && !is_login_page()) {
             wp_enqueue_script('niRvana');
             wp_enqueue_style('niRvana');
+            wp_enqueue_style('niRvana-extend', $theme_uri . '/extend/css/style.css', array('niRvana'), $theme_version);
         }
     });
 } else {

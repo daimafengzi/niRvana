@@ -1,1 +1,102 @@
-img.dashangImg{max-height:248px}.cmt_faces{max-width:32px}article h1,article h2,article h3,article h4,article h5{font-weight:700}article h2{margin:26px 0 .6em 0;border-bottom:1px solid;color:#f60;font-size:26px}article h3{margin:20px 0 .6em 0;color:#f6821f;font-size:20px}.heading-anchor{display:block;position:relative;top:-65px;visibility:hidden}
+/* -----------------------------------------------------------
+   NiRvana Heading System - Elegant Scholar v5.0
+----------------------------------------------------------- */
+
+/* 1. 核心计数器：支持中式序号 */
+.article_wrapper article { 
+    counter-reset: h2counter; 
+}
+
+/* --- [ H2: 雅致大标题 - 中式排版 ] --- */
+.article_wrapper article h2 {
+    counter-reset: h3counter;
+    display: flex !important;
+    align-items: center !important;
+    margin: 45px 0 25px !important;
+    padding: 12px 15px !important;
+    color: #2c3e50 !important;
+    font-size: 1.6em !important;
+    font-weight: 700 !important;
+    border-left: 4px solid #24a0f0 !important;
+    background: #fbfdff !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+    border-radius: 4px !important;
+    transition: all 0.3s ease !important;
+}
+
+.article_wrapper article h2:hover {
+    box-shadow: 0 8px 20px rgba(36, 160, 240, 0.1) !important;
+    transform: translateY(-2px) !important;
+}
+
+.article_wrapper article h2::before {
+    all: unset !important;
+    /* 使用 cjk-ideographic 自动生成 一、二、三 */
+    content: counter(h2counter, cjk-ideographic) "、" !important;
+    counter-increment: h2counter !important;
+    display: inline-block !important;
+    color: #24a0f0 !important;
+    font-size: 0.95em !important;
+    font-weight: 800 !important;
+    margin-right: 5px !important;
+}
+
+/* --- [ H3: 次章节 - 标准数码 ] --- */
+.article_wrapper article h3 {
+    counter-reset: h4counter;
+    counter-increment: h3counter !important;
+    display: flex !important;
+    align-items: center !important;
+    margin: 35px 0 18px !important;
+    padding: 5px 0 !important;
+    color: #34495e !important;
+    font-size: 1.35em !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid #eee !important;
+}
+
+.article_wrapper article h3::before {
+    all: unset !important;
+    content: counter(h2counter) "." counter(h3counter) !important;
+    display: inline-block !important;
+    font-family: "Georgia", serif !important;
+    font-size: 0.85em !important;
+    color: #24a0f0 !important;
+    font-weight: bold !important;
+    margin-right: 12px !important;
+    font-style: italic !important;
+}
+
+/* --- [ H4: 小章节 - 括号对齐 ] --- */
+.article_wrapper article h4 {
+    counter-increment: h4counter !important;
+    display: flex !important;
+    align-items: center !important;
+    margin: 25px 0 12px !important;
+    color: #5d6d7e !important;
+    font-size: 1.15em !important;
+    font-weight: 600 !important;
+}
+
+.article_wrapper article h4::before {
+    all: unset !important;
+    content: "(" counter(h4counter) ")" !important;
+    display: inline-block !important;
+    color: #abb2b9 !important;
+    margin-right: 10px !important;
+    font-weight: normal !important;
+}
+
+/* 装饰性细节：悬浮 H3 时底线变色 */
+.article_wrapper article h3:hover {
+    border-bottom-color: #24a0f0 !important;
+    transition: border-color 0.3s ease !important;
+}
+
+/* 兼容内链 */
+.article_wrapper article h2 a, 
+.article_wrapper article h3 a, 
+.article_wrapper article h4 a {
+    color: inherit !important;
+    text-decoration: none !important;
+}
