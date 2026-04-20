@@ -1078,43 +1078,46 @@ function inlojv_custom_avatar($avatar, $id_or_email, $size, $default, $alt)
     }
     return $avatar;
 }
-// 后台/前台统一本地头像：覆盖 WP 默认头像 URL，避免任何外部请求
+// 后台/前台统一本地头像与镜像加速：覆盖 WP 默认头像 URL，加速国内访问
 add_filter('get_avatar_url', function ($url, $id_or_email, $args) {
+    // 1. 如果有随机头像配置，走随机头像逻辑
     $random_avatar_arr = get_option('random_avatar');
-    if (!is_array($random_avatar_arr) || count($random_avatar_arr) === 0) {
-        $random_avatar_arr = array(
-            array(
-                'avatar' => get_stylesheet_directory_uri() . '/assets/imgs/default_avatar.jpg'
-            )
-        );
-    }
-    // 解析邮箱
-    if (is_int($id_or_email)) {
-        $user = get_user_by('ID', $id_or_email);
-        $email = $user ? $user->user_email : '';
-    } elseif (is_object($id_or_email) && isset($id_or_email->comment_author_email)) {
-        $email = $id_or_email->comment_author_email;
-    } else {
-        $email = (string)$id_or_email;
-    }
-    $email_hash = md5(strtolower(trim((string)$email)));
-    $count = max(1, count($random_avatar_arr));
-    $stable_index = hexdec(substr($email_hash, 0, 8)) % $count;
-    $chosen = $random_avatar_arr[$stable_index]['avatar'];
-    $fallback = get_stylesheet_directory_uri() . '/assets/imgs/default_avatar.jpg';
-    if (strpos($chosen, '/assets/random/touxiang/') !== false) {
+    if (is_array($random_avatar_arr) && count($random_avatar_arr) > 0) {
+        if (is_int($id_or_email)) {
+            $user = get_user_by('ID', $id_or_email);
+            $email = $user ? $user->user_email : '';
+        } elseif (is_object($id_or_email) && isset($id_or_email->comment_author_email)) {
+            $email = $id_or_email->comment_author_email;
+        } else {
+            $email = (string)$id_or_email;
+        }
+        $email_hash = md5(strtolower(trim((string)$email)));
+        $count = count($random_avatar_arr);
+        $stable_index = hexdec(substr($email_hash, 0, 8)) % $count;
+        $chosen = $random_avatar_arr[$stable_index]['avatar'];
+        $fallback = get_stylesheet_directory_uri() . '/assets/imgs/default_avatar.jpg';
+        
+        // 检查文件是否存在
+        if (strpos($chosen, get_stylesheet_directory_uri()) === 0) {
+            $path = str_replace(get_stylesheet_directory_uri(), get_stylesheet_directory(), $chosen);
+            if (file_exists($path)) {
+                return $chosen;
+            }
+        }
         return $fallback;
     }
-    $theme_uri = get_stylesheet_directory_uri();
-    $theme_dir = get_stylesheet_directory();
-    if (strpos($chosen, $theme_uri) === 0) {
-        $relative = str_replace($theme_uri, '', $chosen);
-        $path = $theme_dir . $relative;
-        if (!file_exists($path)) {
-            return $fallback;
-        }
-    }
-    return $chosen;
+
+    // 2. 如果没有随机头像，则对 Gravatar 官方域名进行镜像替换
+    $sources = array(
+        'www.gravatar.com',
+        '0.gravatar.com',
+        '1.gravatar.com',
+        '2.gravatar.com',
+        'secure.gravatar.com',
+        'cn.gravatar.com'
+    );
+    // 替换为国内镜像 gravatar.loli.net
+    return str_replace($sources, 'gravatar.loli.net', $url);
 }, 10, 3);
 function get_the_naved_contentnav($content)
 {
