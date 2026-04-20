@@ -697,56 +697,7 @@ function add_cookies_for_reply($commentdata)
     }
     return $commentdata;
 }
-$reply2down_times = 0;
-function reply_to_down($atts, $content = null)
-{
-    global $reply2down_times;
-    $reply2down_times++;
-    if (get_option('回复可见说明')) {
-        $licence = wpautop(str_ireplace('img', 'div', get_option('回复可见说明')));
-    } else {
-        $licence = '<p>请您认真评论后再下载！</p>';
-    }
-    extract(shortcode_atts(array("notice" => '
-<div type="button" class="getit" data-toggle="modal" data-target="#reply2down_'.$reply2down_times.'"><a style="cursor:pointer;"><span>Get it!</span><span>Download</span></a></div>
-<div class="modal fade" id="reply2down_'.$reply2down_times.'" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-<div class="modal-dialog" role="document">
-<div class="modal-content">
-<div class="modal-header">
-<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-<h4 class="modal-title" id="myModalLabel">下载提示</h4>
-</div>
-<div class="modal-body">'.$licence.'</div>
-<div class="modal-footer">
-<button type="button" class="btn btn-default" data-dismiss="modal">知道了</button>
-</div>
-</div>
-</div>
-</div>
-'), $atts));
-    $post_id = get_the_ID();
-    if (isset($_COOKIE['current_user_email'])) {
-        $email = $_COOKIE['current_user_email'];
-        return pf_user_has_approved_comment_in_post($post_id, $email) ? do_shortcode('[download]'.$content.'[/download]') : $notice;
-    } else {
-        return $notice;
-    }
-}
-add_shortcode('reply2down', 'reply_to_down');
-function need_reply($atts, $content = null)
-{
-    extract(shortcode_atts(array("notice" => '
-<div class="need_reply">'.get_option('need_reply_tip').'</div>
-'), $atts));
-    $post_id = get_the_ID();
-    if (isset($_COOKIE['current_user_email'])) {
-        $email = $_COOKIE['current_user_email'];
-        return pf_user_has_approved_comment_in_post($post_id, $email) ? do_shortcode($content) : $notice;
-    } else {
-        return $notice;
-    }
-}
-add_shortcode('need_reply', 'need_reply');
+// --- 核心验证函数：评论可见/恢复下载的基础 ---
 function pf_user_has_approved_comment_in_post($postID, $email)
 {
     if (empty($email)) return false;
@@ -761,34 +712,6 @@ function pf_user_has_approved_comment_in_post($postID, $email)
         $email
     ));
     return $count > 0;
-}
-// download 短代码已迁移至 custom_function.php 统一管理
-function recover_comment_fields($comment_fields)
-{
-    $comment = array_shift($comment_fields);
-    $comment_fields = array_merge($comment_fields, array(
-        'comment' => $comment
-    ));
-    return $comment_fields;
-}
-add_filter('comment_form_fields', 'recover_comment_fields');
-function rss_show_thumbnail($content)
-{
-    global $post;
-    if (has_post_thumbnail($post->ID)) {
-        $output = get_the_post_thumbnail($post->ID);
-        $content = $output;
-    }
-    return $content;
-}
-add_filter('the_excerpt_rss', 'rss_show_thumbnail');
-add_filter('the_content_feed', 'rss_show_thumbnail');
-add_filter('upload_mimes', 'my_upload_mimes');
-function my_upload_mimes($mimes = array())
-{
-    $mimes['rar'] = 'application/rar';
-    $mimes['zip'] = 'application/zip';
-    return $mimes;
 }
 function mytheme_comment($comment, $args, $depth) {
     if ('div' === $args['style']) {
@@ -830,13 +753,7 @@ function pf_new_windows_comment_author($author_link)
 {
     return str_replace("<a", "<a target='_blank'", $author_link);
 }
-function shortCodeTips($atts, $content = null)
-{
-    extract(shortcode_atts(array(
-        "type" => 'info',
-        "display" => '',
-    ), $atts));
-// --- 冗余短代码 (tip, fmt, modal, dropdown, li, collapse) 已统一迁移至 custom_function.php 管理 ---
+
 class pandaTabs extends Walker_Nav_Menu
 {
     public function start_el(&$output, $item, $depth = 0, $args = array(), $id = 0)
