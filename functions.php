@@ -41,54 +41,60 @@ function niRvana_anti_copy_assets()
 
     $js = "if(window.pandastudio_framework) { pandastudio_framework.article_dirty_selector = ['" . implode("','", $pf_dirty_selector) . "']; }";
     wp_add_inline_script('niRvana-custom', $js);
+}
+add_action('wp_enqueue_scripts', 'niRvana_anti_copy_assets', 20);
 
-    // 优化：代码块复制按钮支持
+// 独立的代码块一键复制功能 (始终开启)
+function niRvana_code_copy_assets() {
     $copy_js = "
     jQuery(document).ready(function($) {
         $('pre').each(function() {
             var pre = $(this);
-            if (pre.children('code').length > 0) {
-                pre.prepend('<div class=\"copy-code-btn\" title=\"复制代码\"><i class=\"fas fa-copy\"></i></div>');
+            if (pre.find('.copy-code-btn').length === 0) {
+                pre.prepend('<div class=\"copy-code-btn\" title=\"复制代码\"><i class=\"far fa-copy\"></i> 复制</div>');
             }
         });
+
         $(document).on('click', '.copy-code-btn', function() {
             var btn = $(this);
-            var code = btn.siblings('code').get(0);
-            var text = code.innerText || code.textContent;
+            var pre = btn.parent();
+            var codeText = pre.find('code').length ? pre.find('code').text() : pre.contents().filter(function() {
+                return this.nodeType === 3 || (!$(this).hasClass('copy-code-btn'));
+            }).text();
+
             var textArea = document.createElement('textarea');
-            textArea.value = text;
+            textArea.value = codeText.trim();
             document.body.appendChild(textArea);
             textArea.select();
             try {
-                document.execCommand('copy');
-                btn.html('<i class=\"fas fa-check\"></i>').addClass('success');
-                setTimeout(function() {
-                    btn.html('<i class=\"fas fa-copy\"></i>').removeClass('success');
-                }, 2000);
-            } catch (err) {
-                console.error('复制失败', err);
-            }
+                if (document.execCommand('copy')) {
+                    btn.html('<i class=\"fas fa-check\"></i> 已复制').addClass('success');
+                    setTimeout(function() {
+                        btn.html('<i class=\"far fa-copy\"></i> 复制').removeClass('success');
+                    }, 2000);
+                }
+            } catch (err) { console.error('复制失败', err); }
             document.body.removeChild(textArea);
         });
     });";
     wp_add_inline_script('niRvana-custom', $copy_js);
 
-    // 优化：代码块复制按钮样式
     $copy_css = "
-    pre { position: relative; }
+    pre { position: relative; padding-top: 35px !important; margin-bottom: 20px !important; }
     .copy-code-btn { 
-        position: absolute; top: 10px; right: 10px; 
-        cursor: pointer; padding: 5px 8px; border-radius: 4px; 
-        background: rgba(255,255,255,0.1); color: #fff; font-size: 12px;
-        transition: all 0.3s; opacity: 0; z-index: 10;
+        position: absolute; top: 6px; right: 10px; 
+        cursor: pointer; padding: 3px 12px; border-radius: 4px; 
+        background: rgba(144, 144, 144, 0.2); color: #888 !important; font-size: 11px;
+        transition: all 0.3s; z-index: 99; border: 1px solid rgba(144, 144, 144, 0.1);
+        display: flex; align-items: center; gap: 4px;
     }
-    pre:hover .copy-code-btn { opacity: 1; }
-    .copy-code-btn:hover { background: rgba(255,255,255,0.2); }
-    .copy-code-btn.success { color: #4caf50; }
+    pre:hover .copy-code-btn { color: #666 !important; background: rgba(144, 144, 144, 0.3); }
+    .copy-code-btn:hover { background: #4caf50 !important; color: #fff !important; border-color: #4caf50; }
+    .copy-code-btn.success { background: #4caf50 !important; color: #fff !important; border-color: #4caf50; }
     ";
     wp_add_inline_style('niRvana-extend', $copy_css);
 }
-add_action('wp_enqueue_scripts', 'niRvana_anti_copy_assets', 20);
+add_action('wp_enqueue_scripts', 'niRvana_code_copy_assets', 30);
 
 //自动更新
 require_once(get_template_directory() . '/theme-update-checker/plugin-update-checker.php');
