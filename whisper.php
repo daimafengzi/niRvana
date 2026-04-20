@@ -3,11 +3,12 @@
  * Template name: 说说页面
  */
 get_header();
+echo "<!-- I AM WHISPER TEMPLATE -->";
 ?>
 <?php
 $frontpage_carousels_type = _opt( 'frontpage_carousels_type' );
 $type = strstr( $frontpage_carousels_type, 'full' ) ? 'single-imageflow-full' : 'single-imageflow';
-get_topSlider( array( $post->ID ), $type );
+// get_topSlider( array( $post->ID ), $type );
 ?>
 <div class="container postListsModel">
 	<div class="row">
@@ -180,6 +181,8 @@ get_topSlider( array( $post->ID ), $type );
 									</li>
 									<?php
 								}
+							} else {
+								echo '<div style="text-align:center;padding:50px 0;"><i class="fas fa-comment-dots" style="font-size:3em;color:#eee;display:block;margin-bottom:15px;"></i><p style="color:#999;">暂时还没有发布说说哦。<br>去后台发布一条吧！</p></div>';
 							}
 							?>
 						</ul>

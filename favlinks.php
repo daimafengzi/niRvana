@@ -3,11 +3,12 @@
 Template Name: 友情链接
 */
 get_header();
+echo "<!-- I AM LINKS TEMPLATE -->";
 ?>
 <?php
 $frontpage_carousels_type = _opt( 'frontpage_carousels_type' );
 $type = strstr( $frontpage_carousels_type, 'full' ) ? 'single-imageflow-full' : 'single-imageflow';
-get_topSlider( array( $post->ID ), $type );
+// get_topSlider( array( $post->ID ), $type );
 ?>
 <div class="container postListsModel">
 	<div class="row">
@@ -34,6 +35,9 @@ get_topSlider( array( $post->ID ), $type );
 									'orderby'    => 'slug',
 								)
 							);
+							if ( empty($categories) ) {
+								echo '<div style="text-align:center;padding:50px 0;"><i class="fas fa-link" style="font-size:3em;color:#eee;display:block;margin-bottom:15px;"></i><p style="color:#999;">您还没有创建友情链接分类或添加链接。<br>请前往后台【友情链接】菜单，先创建分类，再发布链接。</p></div>';
+							}
 							for ( $i = 0; $i < count( $categories ); $i++ ) {
 								$category = $categories[ $i ];
 								echo '<div class="title_style_01 favlinks_title" id="favlink-' . $i . '"><h2>' . $category->name . '</h2></div><div class="favlinks-group clearfix">';

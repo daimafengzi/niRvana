@@ -280,10 +280,19 @@ add_filter('style_loader_src', '_remove_script_version', 15);
 // 添加自定义重写规则支持
 add_action('init', 'nirvana_add_rewrite_rules');
 function nirvana_add_rewrite_rules() {
-    // 添加文章ID.html格式的重写规则
+    // 1. 明确我们要特殊支持的页面路径（优先级最高）
+    add_rewrite_rule('^page-archives/?$', 'index.php?pagename=page-archives', 'top');
+    add_rewrite_rule('^page-links/?$', 'index.php?pagename=page-links', 'top');
+    add_rewrite_rule('^page-say/?$', 'index.php?pagename=page-say', 'top');
+    add_rewrite_rule('^newarchives/?$', 'index.php?pagename=newarchives', 'top');
+
+    // 2. 恢复文章 ID.html 格式支持
     add_rewrite_rule('^([0-9]+)\.html$', 'index.php?p=$matches[1]', 'top');
     add_rewrite_rule('^([0-9]+)/?$', 'index.php?p=$matches[1]', 'top');
     
+    // 3. 通用页面支持（放到 bottom，不抢分类和文章的生意）
+    add_rewrite_rule('^([^/]+)/?$', 'index.php?pagename=$matches[1]', 'bottom');
+
     // 添加文章名格式的重写规则（备用）
     //add_rewrite_rule('^([^/]+)/?$', 'index.php?name=$matches[1]', 'top');
 }
