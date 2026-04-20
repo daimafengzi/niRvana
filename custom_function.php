@@ -22,6 +22,26 @@ add_filter('xmlrpc_methods', function ($methods) {
     unset($methods['pingback.ping']);
     return $methods;
 });
+/**
+ * 智能标题去重：检测老文章是否已有手动编号
+ */
+add_action('wp_footer', function() {
+    ?>
+    <script>
+    (function() {
+        var headings = document.querySelectorAll('.article_wrapper article h2, .article_wrapper article h3, .article_wrapper article h4');
+        headings.forEach(function(h) {
+            var text = h.innerText.trim();
+            // 匹配模式：中文数字+顿号，或阿拉伯数字+点/顿号/空格，或 1.1 这种层级格式
+            var hasManual = /^[一二三四五六七八九十\d]+[、\.\s]/.test(text) || /^[\d]+\.[\d]+/.test(text);
+            if (hasManual) {
+                h.classList.add('has-manual-number');
+            }
+        });
+    })();
+    </script>
+    <?php
+});
 
 // 集成文章表格美化样式
 add_action('wp_head', function() {

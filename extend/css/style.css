@@ -93,6 +93,13 @@
     transition: border-color 0.3s ease !important;
 }
 
+/* --- [ 智能兼容：如果手动写了编号，则隐藏自动编号 ] --- */
+.article_wrapper article h2.has-manual-number::before,
+.article_wrapper article h3.has-manual-number::before,
+.article_wrapper article h4.has-manual-number::before {
+    display: none !important;
+}
+
 /* 兼容内链 */
 .article_wrapper article h2 a, 
 .article_wrapper article h3 a, 
