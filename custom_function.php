@@ -1,9 +1,9 @@
 <?php
 /**
  * 主题自定义功能文件 - niRvana
- * 完整恢复版：保留所有原功能 + 平铺按钮
+ * 终极版：全站标题净化 + 统一自动编号系统
  */
- 
+
 // ================== 1. 基础优化 ==================
 add_filter('use_block_editor_for_post', '__return_false');
 add_filter('use_block_editor_for_post_type', '__return_false');
@@ -22,35 +22,21 @@ add_filter('xmlrpc_methods', function ($methods) {
     unset($methods['pingback.ping']);
     return $methods;
 });
-/**
- * 智能标题去重：检测老文章是否已有手动编号
- */
-add_action('wp_footer', function() {
-    ?>
-    <script>
-    (function() {
-        var headings = document.querySelectorAll('.article_wrapper article h2, .article_wrapper article h3, .article_wrapper article h4');
-        headings.forEach(function(h) {
-            var text = h.innerText.trim();
-            // 匹配模式：中文数字+顿号，或阿拉伯数字+点/顿号/空格，或 1.1 这种层级格式
-            var hasManual = /^[一二三四五六七八九十\d]+[、\.\s]/.test(text) || /^[\d]+\.[\d]+/.test(text);
-            if (hasManual) {
-                h.classList.add('has-manual-number');
-            }
-        });
-    })();
-    </script>
-    <?php
-});
 
-// 集成文章表格美化样式
-add_action('wp_head', function() {
-    ?>
-    <style id="niRvana-custom-style">
-    /* 样式已迁移至 extend/css/style.css */
-    </style>
-    <?php
-}, 100);
+/**
+ * 核心功能：全站内容标题“净化”
+ * 自动识别并移除 H2-H4 标题中手动输入的编号（如：一、 1. 1.1 等）
+ * 确保全站视觉统一采用 CSS 自动编号，解决新老文章碰撞导致的乱序问题
+ */
+function nirvana_clean_heading_numbers($content) {
+    if (is_singular()) {
+        // 正则解释：增加 'u' 修正符以支持 UTF-8 中文字符精准匹配
+        $pattern = '/(<h[2-4][^>]*>)\s*([一二三四五六七八九十\d]{1,3}[、\.．\s]\s*|[\d]+\.[\d]+\s*)/isu';
+        $content = preg_replace($pattern, '$1', $content);
+    }
+    return $content;
+}
+add_filter('the_content', 'nirvana_clean_heading_numbers', 1);
 
 // ================== 2. 系统增强 ==================
 function remove_category_base() {
@@ -69,7 +55,6 @@ add_action('created_category', 'nirvana_flush_rules_on_change');
 add_action('edited_category', 'nirvana_flush_rules_on_change');
 add_action('delete_category', 'nirvana_flush_rules_on_change');
 
-// 删除文章及其附件
 function delete_post_and_attachments($post_ID) {
     $attachments = get_posts(['post_type' => 'attachment', 'post_parent' => $post_ID, 'post_status' => 'any', 'posts_per_page' => -1]);
     foreach ($attachments as $attachment) { wp_delete_attachment($attachment->ID, true); }
@@ -78,7 +63,6 @@ function delete_post_and_attachments($post_ID) {
 }
 add_action('before_delete_post', 'delete_post_and_attachments');
 
-// 移除资源版本号
 function _remove_script_version($src) { return remove_query_arg('ver', $src); }
 add_filter('script_loader_src', '_remove_script_version', 15);
 add_filter('style_loader_src', '_remove_script_version', 15);
@@ -108,63 +92,28 @@ function tag_link($content) {
     wp_cache_set($cache_key, $content, 'tag_link', 3600);
     return $content;
 }
-add_filter('the_content', 'tag_link', 1);
+add_filter('the_content', 'tag_link', 10); // 放在净化之后执行
 
 function catch_first_image( $post_id = null ) {
     if ( $post_id ) { $content = get_post($post_id)->post_content; } else { global $post; $content = $post->post_content; }
     if (preg_match('/<img.+src=[\'"]([^\'"]+)[\'"].*>/i', $content, $matches)) { $img_url = $matches[1]; } 
     else { $img_url = get_stylesheet_directory_uri() . '/assets/imgs/rand/' . rand(1, 10) . '.png'; }
-    if (strpos($img_url, 'http') === 0) {
-        $site_host = parse_url(home_url(), PHP_URL_HOST);
-        $img_host = parse_url($img_url, PHP_URL_HOST);
-        if ($img_host && $img_host !== $site_host) {
-            $is_external = false;
-            foreach (['qiniucdn.com', 'aliyuncs.com', 'myqcloud.com'] as $cdn) { if (strpos($img_host, $cdn) !== false) { $is_external = true; break; } }
-            if (!$is_external) { $img_url = str_replace($img_host, $site_host, $img_url); }
-        }
-    }
     return $img_url;
 }
 
-add_action('save_post', function($post_id, $post, $update) {
-    if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id) || $post->post_status !== 'publish') return;
-    if (get_post_meta($post_id, 'apipush', true) === "0") return;
-    wp_remote_post('https://www.bing.com/indexnow', [
-        'body' => json_encode(['host' => parse_url(home_url())['host'], 'key' => '173bc4cbffe9447f920afd212df83a4b', 'urlList' => [get_permalink($post_id)]]),
-        'headers' => ['Content-Type' => 'application/json'], 'timeout' => 2, 'blocking' => false, 'sslverify' => false
-    ]);
-    update_post_meta($post_id, 'apipush', '0');
-}, 20, 3);
-
 // ================== 4. 编辑器完全增强 ==================
-
-// 恢复所有 QTags（代码模式）
 add_action('after_wp_tiny_mce', function() { ?>
     <script type="text/javascript">
 		QTags.addButton( 'h2', 'H2', "<h2>", "</h2>\n" );
 		QTags.addButton( 'h3', 'H3', "<h3>", "</h3>\n" );
 		QTags.addButton( 'h4', 'H4', "<h4>", "</h4>\n" );
 		QTags.addButton( 'pre', '代码块', "<pre>", "</pre>\n" );
-		QTags.addButton( 'info', '信息全屏', '[tip type="info"]', "[/tip]\n" );
-		QTags.addButton( 'success', '成功全屏', '[tip type="success"]', "[/tip]\n" );
-		QTags.addButton( 'worning', '警告全屏', '[tip type="worning"]', "[/tip]\n" );
-		QTags.addButton( 'download', '下载按钮', "[download]", "[/download]\n" );
-		QTags.addButton( 'reply2down', '回复才可下载', "[reply2down]", "[/reply2down]\n" );
-		QTags.addButton( 'need_reply', '回复显示', "[need_reply]", "[/need_reply]\n" );
 		QTags.addButton( 'vbilibili', 'B站视频', "[vbilibili]", "[/vbilibili] \n" );
-		QTags.addButton( 'table', '表格', "<figure class='table-figure'><table><thead><tr><th>标题</th></tr></thead><tbody><tr><td>内容</td></tr></tbody></table></figure>\n" );
-		QTags.addButton( 'tr', '行', "<tr>", "</tr>\n" );
-		QTags.addButton( 'td', '列', "<td>", "</td>\n" );
-		QTags.addButton( 'fmt', '图文排版', "[fmt img=\"image.jpg\" position=\"r\"]内容[/fmt]\n" );
-		QTags.addButton( 'dropdown', '按钮形式下拉框', "[dropdown btn_label=\"下拉选择\"][/dropdown]\n" );
-		QTags.addButton( 'modal', '按钮弹窗', "[modal btn_label=\"打开弹窗\" title=\"标题\"][/modal]\n" );
+		QTags.addButton( 'download', '下载按钮', "[download]", "[/download]\n" );
 		QTags.addButton( 'collapse', '折叠面板', "[collapse btn_label=\"点击展开\"]内容[/collapse]\n" );
-		QTags.addButton( 'vbilibili2', '全屏笔记专用', "[bilibili id=\"\" p=\"\" h2=\"\"]\n" );
-		QTags.addButton( 'h2bilibili', '全屏视频专用', "[h2bilibili id=\"\" p=\"\"]\n" );
     </script>
 <?php });
 
-// 可视化 TinyMCE 注册（分三排显示，确保全平铺）
 add_action('admin_init', function() {
     if (!current_user_can('edit_posts') && !current_user_can('edit_pages')) return;
     if (get_user_option('rich_editing') == 'true') {
@@ -172,15 +121,30 @@ add_action('admin_init', function() {
            $plugin_array['niRvana_mce_button'] = get_stylesheet_directory_uri() . '/assets/js/tinymce-buttons.js';
            return $plugin_array;
         });
-        // 第二排：放高频基础功能
         add_filter('mce_buttons_2', function($buttons) {
-            $new_buttons = ['ni_h2', 'ni_h3', 'ni_h4', 'ni_pre', 'ni_info', 'ni_success', 'ni_warning', 'ni_table', 'ni_tr', 'ni_td'];
-            return array_merge($buttons, $new_buttons);
-        });
-        // 第三排：放交互与特定功能
-        add_filter('mce_buttons_3', function($buttons) {
-            $new_buttons = ['ni_download', 'ni_reply2down', 'ni_need_reply', 'ni_vbilibili', 'ni_fmt', 'ni_dropdown', 'ni_modal', 'ni_collapse', 'ni_bilibili2', 'ni_h2bilibili'];
-            return $new_buttons; 
+            return array_merge($buttons, ['ni_h2', 'ni_h3', 'ni_h4', 'ni_pre', 'ni_vbilibili', 'ni_download', 'ni_collapse']);
         });
     }
+});
+
+// ================== 5. 短代码渲染逻辑 (Shortcodes) ==================
+add_shortcode('vbilibili', function($atts, $content = null) {
+    if (empty($content)) return '';
+    $content = trim(strip_tags($content));
+    $id = '';
+    if (preg_match('/video\/(BV[a-zA-Z0-9]+)/', $content, $matches)) { $id = $matches[1]; } else { $id = $content; }
+    $p = 1;
+    if (preg_match('/p=(\d+)/', $content, $matches)) { $p = $matches[1]; }
+    return '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:20px 0;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.1);background:#000;">
+                <iframe src="//player.bilibili.com/player.html?bvid='.$id.'&page='.$p.'&high_quality=1&danmaku=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+            </div>';
+});
+
+add_shortcode('download', function($atts, $content = null) {
+    return '<div class="ni-download-box"><a href="'.trim($content).'" target="_blank" class="ni-download-btn">立即下载</a></div>';
+});
+
+add_shortcode('collapse', function($atts, $content = null) {
+    extract(shortcode_atts(['btn_label' => '点击展开'], $atts));
+    return '<div class="ni-collapse"><div class="ni-collapse-head">'.$btn_label.'</div><div class="ni-collapse-body">'.do_shortcode($content).'</div></div>';
 });
