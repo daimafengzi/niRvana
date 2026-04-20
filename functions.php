@@ -16,7 +16,9 @@ function niRvana_enqueue_assets()
     
     // Header CSS
     wp_enqueue_style('niRvana-extend', $theme_uri . '/extend/css/style.css', array(), null);
-    
+    wp_enqueue_style('font-awesome', $theme_uri . '/assets/css/fontawesome.css', array(), '5.15.4');
+    wp_enqueue_style('jv-element', $theme_uri . '/assets/css/jv-element.css', array(), null);
+
     // Footer JS
     wp_enqueue_script('niRvana-custom', $theme_uri . '/extend/js/custom.min.js', array('jquery'), null, true);
 }
@@ -324,7 +326,7 @@ function pf_global_search($query_arg)
             $posttype = get_post_type();
             switch ($posttype) {
                 case 'post':
-                    $thumbnail = get_the_post_thumbnail_url($post_id);
+                    $thumbnail = catch_first_image($post_id);
                     break;
                 case 'gallery':
                     $gallery_images = get_post_meta($post_id, "gallery_images", true);
@@ -1784,11 +1786,49 @@ include('custom_function.php');
 include('pandastudio_plugins/config_plugins.php');
 include('pandastudio_framework/config_framework.php');
 
-// 修复 niRvana 主题前台伪静态误报问题
+// 修复 niRvana 主题前台功能接口 (Search, Ding, FAQ, Frontend Options)
+function pf_nirvana_restapi_handler($request)
+{
+    $params = $request->get_json_params();
+    
+    // 如果前端未发送 Content-Type: application/json，WP 可能无法自动解析
+    if (empty($params)) {
+        $body = $request->get_body();
+        if (!empty($body)) {
+            $params = json_decode($body, true);
+        }
+    }
+
+    if (empty($params['e'])) {
+        return new WP_Error('rest_invalid_params', '缺少执行参数 e', array('status' => 400));
+    }
+
+    $e = $params['e'];
+    $arg = isset($params['arg']) ? $params['arg'] : null;
+
+    // 白名单映射：将请求中的逻辑字符串映射到实际的 PHP 函数
+    $whitelist = array(
+        '$result = pf_global_search($arg);' => 'pf_global_search',
+        '$result = frontend_opts();'        => 'frontend_opts',
+        '$result = pf_post_ding($arg);'     => 'pf_post_ding',
+        '$result = pf_faq($arg);'          => 'pf_faq',
+    );
+
+    if (isset($whitelist[$e])) {
+        $function_name = $whitelist[$e];
+        if (function_exists($function_name)) {
+            // 调用对应的函数并返回结果
+            return $arg !== null ? $function_name($arg) : $function_name();
+        }
+    }
+
+    return new WP_Error('rest_forbidden', '非法的执行请求或函数不存在。', array('status' => 403));
+}
+
 add_action('rest_api_init', function () {
     register_rest_route('pandastudio/nirvana', '/restapi/', array(
-        'methods' => 'GET,POST',
-        'callback' => '__return_true',
+        'methods'  => 'GET,POST',
+        'callback' => 'pf_nirvana_restapi_handler',
         'permission_callback' => '__return_true',
     ));
 });
