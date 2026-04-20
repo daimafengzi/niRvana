@@ -7,37 +7,6 @@
 		?>
 		<div class="beian <?php echo ( _opt( 'cn_record_breakline' ) ? 'breakline' : '' ); ?>" :template="beian"></div>
 		<div class="copyright silver-color">Theme <strong>niRvana</strong> By <a href="https://luoweihua.cn/" target="_blank"><span>LuoWeiHua</span></a></div>
-		<script>
-			<?php
-			global $pf_dirty_selector;
-			if ( count( $pf_dirty_selector ) > 0 ) {
-				echo "pandastudio_framework.article_dirty_selector = ['" . implode( "','", $pf_dirty_selector ) . "']";
-			}
-			?>
-		</script>
-		<style>
-			<?php
-			echo implode( ',', $pf_dirty_selector );
-			?>
-				{
-				display: inline !important;
-				font-size: 0 !important;
-				line-height: 0 !important;
-				float: left;
-			}
-
-			<?php
-			echo 'p+' . implode( ',p+', $pf_dirty_selector );
-			echo ',';
-			echo 'h2+' . implode( ',h2+', $pf_dirty_selector );
-			echo ',';
-			echo 'h3+' . implode( ',h3+', $pf_dirty_selector );
-			echo ',';
-			?>
-				{
-				display: none !important;
-			}
-		</style>
 	</div>
 </footer>
 </div>
@@ -226,6 +195,5 @@
 <div :template="dashang"></div>
 <div id="assistance" class="unavailable"></div>
 </body>
-<script type='text/javascript' src='<?php echo get_stylesheet_directory_uri(); ?>/extend/js/custom.min.js' id='custom-js'></script>
 
 </html>

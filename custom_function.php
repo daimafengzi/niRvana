@@ -245,8 +245,7 @@ function noplugin_indexnow($post_id, $post, $update) {
 
 // ================== 5. 其他功能 ==================
 
-// 支持外链缩略图
-add_theme_support('post-thumbnails');
+// 支持外链缩略图已在 functions.php 中配置
 
 // 获取第一张图片（增强版：支持传入 ID 和随机逻辑）
 function catch_first_image( $post_id = null ) {

