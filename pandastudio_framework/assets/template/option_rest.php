@@ -1,18 +1,18 @@
 <?php
 add_action('rest_api_init', function () {
-    register_rest_route('pandastudio/framework', '/get_option/', array(
+    register_rest_route('pandastudio/framework', '/get_option', array(
         'methods' => 'POST',
         'callback' => 'get_option_by_RestAPI',
         'permission_callback' => '__return_true',
     ));
-    register_rest_route('pandastudio/framework', '/update_option/', array(
+    register_rest_route('pandastudio/framework', '/update_option', array(
         'methods' => 'POST',
         'callback' => 'update_option_by_RestAPI',
         'permission_callback' => function () {
             return current_user_can('manage_options');
         },
     ));
-    register_rest_route('pandastudio/framework', '/wp_query/', array(
+    register_rest_route('pandastudio/framework', '/wp_query', array(
         'methods' => 'POST',
         'callback' => 'wp_query_by_RestAPI',
         'permission_callback' => function () {

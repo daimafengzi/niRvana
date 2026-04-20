@@ -1,11 +1,11 @@
 <?php
 add_action('rest_api_init', function () {
-    register_rest_route('pandastudio/framework', '/get_post_meta/', array(
+    register_rest_route('pandastudio/framework', '/get_post_meta', array(
         'methods' => 'POST',
         'callback' => 'get_post_meta_by_RestAPI',
         'permission_callback' => '__return_true',
     ));
-    register_rest_route('pandastudio/framework', '/update_post_meta/', array(
+    register_rest_route('pandastudio/framework', '/update_post_meta', array(
         'methods' => 'POST',
         'callback' => 'update_post_meta_by_RestAPI',
         'permission_callback' => function () {

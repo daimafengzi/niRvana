@@ -6,7 +6,7 @@
 		}
 		?>
 		<div class="beian <?php echo ( _opt( 'cn_record_breakline' ) ? 'breakline' : '' ); ?>" :template="beian"></div>
-		<div class="copyright silver-color">Theme <strong>niRvana</strong> By <a href="https://blog.mkliu.top/" target="_blank"><span>michaelliunsky</span></a></div>
+		<div class="copyright silver-color">Theme <strong>niRvana</strong> By <a href="https://luoweihua.cn/" target="_blank"><span>LuoWeiHua</span></a></div>
 		<script>
 			<?php
 			global $pf_dirty_selector;

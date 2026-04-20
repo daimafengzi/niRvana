@@ -295,14 +295,14 @@
         "custom_taxonomies": []
       },
       {
-        "name": "轻博客",
-        "type": "microblog",
+        "name": "说说",
+        "type": "shuoshuo",
         "allow_categorys": false,
-        "supports": ["editor"],
+        "supports": ["title", "editor", "author"],
         "menu_icon": "dashicons-editor-quote",
-        "unset_columns": ["tags", "title"],
+        "unset_columns": ["tags"],
         "new_columns": [
-          { "name": "microblog_content", "display": "轻博客内容" }
+          { "name": "microblog_content", "display": "说说内容" }
         ],
         "custom_taxonomies": []
       }

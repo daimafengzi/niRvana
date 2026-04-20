@@ -3,30 +3,29 @@
 function pf_framework_enqueue_scripts() {
     wp_register_script( 'pf_restapi', '' );
 
-    $pf_api_translation_array = array(
-        'route' => esc_url_raw( rest_url() ),
-        'blog_name' => get_bloginfo( 'name' ),
-        'nonce' => wp_create_nonce( 'wp_rest' ),
-        'home' => home_url(),
-    );
+    // 无论固定链接怎么设，强制使用最稳定的参数化路径，解决 phpStudy/localhost 下的重写失败问题
+    $pf_api_translation_array['route'] = home_url('index.php?rest_route=/');
+    $pf_api_translation_array['blog_name'] = get_bloginfo('name');
+    $pf_api_translation_array['nonce'] = wp_create_nonce('wp_rest');
+    $pf_api_translation_array['home'] = home_url();
 
     $theme = wp_get_theme();
     $pf_api_translation_array['theme'] = array(
-        'uri' => $theme->get( 'ThemeURI' ),
-        'author_uri' => $theme->get( 'AuthorURI' ),
-        'name' => $theme->get( 'Name' ),
-        'version' => $theme->get( 'Version' ),
+        'uri' => $theme->get('ThemeURI'),
+        'author_uri' => $theme->get('AuthorURI'),
+        'name' => $theme->get('Name'),
+        'version' => $theme->get('Version'),
         'route' => get_stylesheet_directory_uri(),
     );
 
     $pf_api_translation_array['dark_mode'] = array(
-        'enable' => get_option( 'enable_dark_mode' ),
-        'auto' => get_option( 'auto_dark_mode' ),
-        'time_start' => get_option( 'dark_mode_time_start' ),
-        'time_end' => get_option( 'dark_mode_time_end' ),
+        'enable' => get_option('enable_dark_mode'),
+        'auto' => get_option('auto_dark_mode'),
+        'time_start' => get_option('dark_mode_time_start'),
+        'time_end' => get_option('dark_mode_time_end'),
     );
 
-    if ( is_admin() ) {
+    if (is_admin()) {
         global $wpdb;
 
         $request  = "SELECT $wpdb->terms.term_id, name FROM $wpdb->terms ";
@@ -34,10 +33,10 @@ function pf_framework_enqueue_scripts() {
         $request .= " WHERE $wpdb->term_taxonomy.taxonomy = 'category' ";
         $request .= " ORDER BY term_id asc";
 
-        $categorys = $wpdb->get_results( $request );
+        $categorys = $wpdb->get_results($request);
         $categorySelector = array();
 
-        foreach ( $categorys as $category ) {
+        foreach ($categorys as $category) {
             $categorySelector[] = array(
                 'label' => $category->name,
                 'value' => $category->term_id,
@@ -55,87 +54,94 @@ function pf_framework_enqueue_scripts() {
         'id' => $current_user->ID,
     );
 
-    $pf_api_translation_array = apply_filters( 'modify_pandastudio_translation_array', $pf_api_translation_array );
+    $pf_api_translation_array = apply_filters('modify_pandastudio_translation_array', $pf_api_translation_array);
 
-    wp_localize_script( 'pf_restapi', 'pandastudio_framework', $pf_api_translation_array );
-    wp_enqueue_script( 'pf_restapi' );
+    wp_localize_script('pf_restapi', 'pandastudio_framework', $pf_api_translation_array);
+    wp_enqueue_script('pf_restapi');
 }
 
-add_action( 'wp_enqueue_scripts', 'pf_framework_enqueue_scripts' );
-add_action( 'admin_enqueue_scripts', 'pf_framework_enqueue_scripts' );
+add_action('wp_enqueue_scripts', 'pf_framework_enqueue_scripts');
+add_action('admin_enqueue_scripts', 'pf_framework_enqueue_scripts');
 
-add_action( 'rest_api_init', function() {
+add_action('rest_api_init', function () {
     register_rest_route(
         'pandastudio/framework',
-        '/get_option_json/',
+        '/get_option_json',
         array(
             'methods' => 'get',
             'callback' => 'get_option_json_by_RestAPI',
             'permission_callback' => '__return_true',
         )
     );
-} );
+});
 
-function get_option_json_by_RestAPI() {
-    $option_json_file = file_get_contents( 'option.json', 1 );
+function get_option_json_by_RestAPI()
+{
+    $path = get_template_directory() . '/pandastudio_framework/option.json';
+    $option_json_file = file_exists($path) ? file_get_contents($path) : '';
 
-    if ( strlen( $option_json_file ) > 10 ) {
-        $option_json = json_decode( $option_json_file, true );
+    if (strlen($option_json_file) > 10) {
+        $option_json = json_decode($option_json_file, true);
     } else {
         $option_json = array();
     }
 
-    $option_json = apply_filters( 'modify_pandastudio_options', $option_json );
+    $option_json = apply_filters('modify_pandastudio_options', $option_json);
 
     return $option_json;
 }
 
-add_action( 'rest_api_init', function() {
+add_action('rest_api_init', function () {
     register_rest_route(
         'pandastudio/framework',
-        '/get_posttype_and_meta_json/',
+        '/get_posttype_and_meta_json',
         array(
             'methods' => 'get',
             'callback' => 'get_posttype_and_meta_json_by_RestAPI',
             'permission_callback' => '__return_true',
         )
     );
-} );
+});
 
-function get_posttype_and_meta_json_by_RestAPI() {
-    $posttype_and_meta_json_file = file_get_contents( 'posttype_and_meta.json', 1 );
+function get_posttype_and_meta_json_by_RestAPI()
+{
+    $path = get_template_directory() . '/pandastudio_framework/posttype_and_meta.json';
+    $posttype_and_meta_json_file = file_exists($path) ? file_get_contents($path) : '';
 
-    if ( strlen( $posttype_and_meta_json_file ) > 10 ) {
-        $posttype_and_meta_json = json_decode( $posttype_and_meta_json_file, true );
+    if (strlen($posttype_and_meta_json_file) > 10) {
+        $posttype_and_meta_json = json_decode($posttype_and_meta_json_file, true);
     } else {
         $posttype_and_meta_json = array();
     }
 
-    $posttype_and_meta_json = apply_filters( 'modify_pandastudio_posttype_and_meta', $posttype_and_meta_json );
+    $posttype_and_meta_json = apply_filters('modify_pandastudio_posttype_and_meta', $posttype_and_meta_json);
 
     return $posttype_and_meta_json;
 }
 
-$posttype_and_meta_file = file_get_contents( 'posttype_and_meta.json', 1 );
+$base_dir = get_template_directory() . '/pandastudio_framework';
+$posttype_and_meta_file = file_exists($base_dir . '/posttype_and_meta.json') ? file_get_contents($base_dir . '/posttype_and_meta.json') : '';
 
-if ( strlen( $posttype_and_meta_file ) > 10 ) {
+if (strlen($posttype_and_meta_file) > 10) {
     $posttype_and_meta = get_posttype_and_meta_json_by_RestAPI();
-    $myPostTypes = $posttype_and_meta['myPostTypes'];
-    $meta_tabs = $posttype_and_meta['meta'];
+    $myPostTypes = $posttype_and_meta['myPostTypes'] ?? array('posttypes' => array());
+    $meta_tabs = $posttype_and_meta['meta'] ?? array();
     $meta_screens = array();
 
-    foreach ( $meta_tabs as $tab ) {
-        foreach ( $tab['screen'] as $screen ) {
-            array_push( $meta_screens, $screen );
+    foreach ($meta_tabs as $tab) {
+        if (isset($tab['screen'])) {
+            foreach ($tab['screen'] as $screen) {
+                array_push($meta_screens, $screen);
+            }
         }
     }
 
-    include_once( 'assets/template/posttype_json.php' );
-    include_once( 'assets/template/meta_rest.php' );
+    include_once($base_dir . '/assets/template/posttype_json.php');
+    include_once($base_dir . '/assets/template/meta_rest.php');
 }
 
-$option_file = file_get_contents( 'option.json', 1 );
+$option_file = file_exists($base_dir . '/option.json') ? file_get_contents($base_dir . '/option.json') : '';
 
-if ( strlen( $option_file ) > 10 ) {
-    include_once( 'assets/template/option_rest.php' );
+if (strlen($option_file) > 10) {
+    include_once($base_dir . '/assets/template/option_rest.php');
 }

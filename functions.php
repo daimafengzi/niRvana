@@ -13,7 +13,7 @@ require_once(get_template_directory() . '/theme-update-checker/plugin-update-che
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 $niRvanaThemeUpdateChecker = PucFactory::buildUpdateChecker(
-    'https://blog.mkliu.top/source/info.json',
+    'https://github.com/daimafengzi/niRvana/',
     get_template_directory() . '/functions.php',
     'niRvana'
 );
@@ -138,41 +138,8 @@ add_action('comment_post', 'clear_db_cache_archives_list');
 add_action('delete_comment', 'clear_db_cache_archives_list');
 add_action('wp_set_comment_status', 'clear_db_cache_archives_list');
 //说说页面
-add_action('init', 'my_custom_shuoshuo_init');
-function my_custom_shuoshuo_init()
-{
-    $labels = array(
-        'name' => '说说',
-        'singular_name' => '说说',
-        'all_items' => '所有说说',
-        'add_new' => '发表说说',
-        'add_new_item' => '撰写新说说',
-        'edit_item' => '编辑说说',
-        'new_item' => '新说说',
-        'view_item' => '查看说说',
-        'search_items' => '搜索说说',
-        'not_found' => '暂无说说',
-        'not_found_in_trash' => '回收站中没有说说',
-        'parent_item_colon' => '',
-        'menu_name' => '说说'
-    );
-    $args = array(
-        'labels' => $labels,
-        'public' => true,
-        'publicly_queryable' => true,
-        'show_ui' => true,
-        'show_in_menu' => true,
-        'query_var' => true,
-        'rewrite' => true,
-        'capability_type' => 'post',
-        'has_archive' => true,
-        'hierarchical' => false,
-        'menu_position' => null,
-        'supports' => array('title','editor','author'),
-        'menu_icon' => 'dashicons-megaphone'
-    );
-    register_post_type('shuoshuo', $args);
-}
+// 说说功能已迁移至 framework 统一管理
+
 //评论插入代码
 add_action('pf_comment_form_after_face', 'pf_add_comment_form_insert_code');
 function pf_add_comment_form_insert_code()
@@ -436,8 +403,8 @@ register_nav_menus(array(
     'categoryNav' => '分类菜单',
 ));
 if (array_key_exists('whois', $_GET)) {
-    if (md5($_GET['whois']) == '02bd92faa38aaa6cc0ea75e59937a1ef') {
-        wp_die('<h1>开发者信息</h1><br>“' . get_bloginfo('name') . '”网站所使用的主题由 <b><a href="https://www.mkliu.top/" target="_blank" rel="noopener">michaelliunsky</a></b> 开发');
+    if (md5($_GET['whois']) == '02bd92faa38aaa6cc0ea75e59937a1ef' || md5($_GET['whois']) == md5('LuoWeiHua')) {
+        wp_die('<h1>开发者信息</h1><br>“' . get_bloginfo('name') . '”网站所使用的主题由 <b><a href="https://luoweihua.cn/" target="_blank" rel="noopener">LuoWeiHua</a></b> 修改与维护');
     }
 }
 function set_cache($name, $data, $expire)
