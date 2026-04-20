@@ -1,4 +1,8 @@
 <?php
+// 引入核心自定义功能文件 (提前引入，确保权重)
+include('custom_function.php');
+include('production.php');
+
 //注册主题组件
 function theme_component_setup()
 {
@@ -257,8 +261,7 @@ add_filter('preprocess_comment', function ($commentdata) {
     return $commentdata;
 });
 
-//引入主题文件
-include('production.php');
+// 此处原本的 production.php 引用已统一迁移至文件顶部
 //自定义标题
 add_filter('document_title_separator', 'pf_custom_title_separator');
 function pf_custom_title_separator($sep)
@@ -760,36 +763,7 @@ function pf_user_has_approved_comment_in_post($postID, $email)
     ));
     return $count > 0;
 }
-$directDownload_times = 0;
-function download_with_licence($atts, $content = null)
-{
-    global $directDownload_times;
-    $directDownload_times++;
-    if (get_option('版权说明')) {
-        $licence = wpautop(str_ireplace('img', 'div', get_option('版权说明')));
-    } else {
-        $licence = '<p>本站提供的下载内容版权归本站所有。转载 <span style="color:#ff7800">必须</span> 注明出处！</p><p style="font-size:80%; color:#888;">* 标有 “转载” 字样的文章，内容版权归原作者所有。</p>';
-    }
-    return do_shortcode('
-<div type="button" class="getit" data-toggle="modal" data-target="#directDownload_'.$directDownload_times.'"><a style="cursor:pointer;"><span>Get it!</span><span>Download</span></a></div>
-<div class="modal fade" id="directDownload_'.$directDownload_times.'" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-<div class="modal-dialog" role="document">
-<div class="modal-content">
-<div class="modal-header">
-<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-<h4 class="modal-title" id="myModalLabel">版权说明</h4>
-</div>
-<div class="modal-body">'.$licence.'</div>
-<div class="modal-footer">
-<button type="button" class="btn btn-default" data-dismiss="modal">不同意</button>
-<button type="button" class="btn btn-primary" data-dismiss="modal" onclick=window.open("'.$content.'")>同意并下载</button>
-</div>
-</div>
-</div>
-</div>
-');
-}
-add_shortcode('download', 'download_with_licence');
+// download 短代码已迁移至 custom_function.php 统一管理
 function recover_comment_fields($comment_fields)
 {
     $comment = array_shift($comment_fields);
@@ -1851,7 +1825,7 @@ function pf_sidebar_init()
         ));
     }
 }
-include('custom_function.php');
+// 原 custom_function.php 引用已移动至顶部
 include('pandastudio_plugins/config_plugins.php');
 include('pandastudio_framework/config_framework.php');
 
