@@ -16,8 +16,7 @@ function niRvana_enqueue_assets()
     
     // Header CSS
     wp_enqueue_style('niRvana-extend', $theme_uri . '/extend/css/style.css', array(), null);
-    wp_enqueue_style('font-awesome', $theme_uri . '/assets/css/fontawesome.css', array(), '5.15.4');
-    wp_enqueue_style('jv-element', $theme_uri . '/assets/css/jv-element.css', array(), null);
+    wp_enqueue_style('font-awesome', $theme_uri . '/pandastudio_framework/assets/css/font-awesome.css', array(), '5.15.4');
 
     // Footer JS
     wp_enqueue_script('niRvana-custom', $theme_uri . '/extend/js/custom.min.js', array('jquery'), null, true);
@@ -42,8 +41,55 @@ function niRvana_anti_copy_assets()
 
     $js = "if(window.pandastudio_framework) { pandastudio_framework.article_dirty_selector = ['" . implode("','", $pf_dirty_selector) . "']; }";
     wp_add_inline_script('niRvana-custom', $js);
+
+    // 优化：代码块复制按钮支持
+    $copy_js = "
+    jQuery(document).ready(function($) {
+        $('pre').each(function() {
+            var pre = $(this);
+            if (pre.children('code').length > 0) {
+                pre.prepend('<div class=\"copy-code-btn\" title=\"复制代码\"><i class=\"fas fa-copy\"></i></div>');
+            }
+        });
+        $(document).on('click', '.copy-code-btn', function() {
+            var btn = $(this);
+            var code = btn.siblings('code').get(0);
+            var text = code.innerText || code.textContent;
+            var textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                btn.html('<i class=\"fas fa-check\"></i>').addClass('success');
+                setTimeout(function() {
+                    btn.html('<i class=\"fas fa-copy\"></i>').removeClass('success');
+                }, 2000);
+            } catch (err) {
+                console.error('复制失败', err);
+            }
+            document.body.removeChild(textArea);
+        });
+    });";
+    wp_add_inline_script('niRvana-custom', $copy_js);
+
+    // 优化：代码块复制按钮样式
+    $copy_css = "
+    pre { position: relative; }
+    .copy-code-btn { 
+        position: absolute; top: 10px; right: 10px; 
+        cursor: pointer; padding: 5px 8px; border-radius: 4px; 
+        background: rgba(255,255,255,0.1); color: #fff; font-size: 12px;
+        transition: all 0.3s; opacity: 0; z-index: 10;
+    }
+    pre:hover .copy-code-btn { opacity: 1; }
+    .copy-code-btn:hover { background: rgba(255,255,255,0.2); }
+    .copy-code-btn.success { color: #4caf50; }
+    ";
+    wp_add_inline_style('niRvana-extend', $copy_css);
 }
 add_action('wp_enqueue_scripts', 'niRvana_anti_copy_assets', 20);
+
 //自动更新
 require_once(get_template_directory() . '/theme-update-checker/plugin-update-checker.php');
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
@@ -1752,20 +1798,28 @@ function get_the_description($pid, $trim_words = 150)
         if ($post->post_excerpt) {
             $description  = $post->post_excerpt;
         } else {
-            $post_content_r = strip_tags(do_shortcode($post->post_content));
-            $post_content = $post_content_r;
-            $len = strlen($post_content);
-            if ($len > $trim_words) {
-                $description = utf8Substr($post_content, 0, $trim_words);
-            } else {
-                $description = utf8Substr($post_content, 0, $len);
-            }
+            // 优化：先移除短代码，再移除 HTML 标签，性能更好且描述更干净
+            $post_content = strip_tags(strip_shortcodes($post->post_content));
+            $description = (function_exists('mb_substr')) ? mb_substr($post_content, 0, $trim_words, 'utf-8') : substr($post_content, 0, $trim_words);
         }
     }
-    $description = str_replace(["\r\n", "\r", "\n"], '', $description).'...';
-    $description = str_replace("'", "\'", $description);
-    return htmlspecialchars($description);
+    $description = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $description);
+    return esc_attr(trim($description)) . '...';
 }
+
+// 优化：Gravatar 头像国内加速
+function niRvana_get_cravatar($avatar) {
+    if (strpos($avatar, 'gravatar.com') !== false) {
+        return str_replace(
+            ['www.gravatar.com', '0.gravatar.com', '1.gravatar.com', '2.gravatar.com', 'secure.gravatar.com', 'cn.gravatar.com'],
+            'cravatar.cn',
+            $avatar
+        );
+    }
+    return $avatar;
+}
+add_filter('get_avatar', 'niRvana_get_cravatar');
+
 add_action('init', 'pf_sidebar_init');
 function pf_sidebar_init()
 {
