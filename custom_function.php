@@ -175,5 +175,57 @@ add_shortcode('download', function($atts, $content = null) {
 
 add_shortcode('collapse', function($atts, $content = null) {
     extract(shortcode_atts(['btn_label' => '点击展开'], $atts));
-    return '<div class="ni-collapse"><div class="ni-collapse-head">'.$btn_label.'</div><div class="ni-collapse-body">'.do_shortcode($content).'</div></div>';
+// ================== 6. 找回丢失的核心短代码 (Article, Reply, Video, etc.) ==================
+
+/**
+ * [article id="123"] 文章内链引用
+ */
+add_shortcode('article', function($atts) {
+    extract(shortcode_atts(['id' => ''], $atts));
+    if (empty($id)) return '';
+    $post = get_post($id);
+    if ($post) {
+        return '<div class="ni-article-cite"><a href="' . get_permalink($id) . '" target="_blank"><i class="fa fa-link"></i> ' . get_the_title($id) . '</a></div>';
+    }
+    return '';
 });
+
+/**
+ * [reply] 评论可见内容 [/reply]
+ */
+add_shortcode('reply', function($atts, $content = null) {
+    extract(shortcode_atts(['notice' => '<div class="ni-reply-notice"><i class="fa fa-lock"></i> 温馨提示：此处内容需要<a href="#respond">评论本文</a>后刷新才能查看！</div>'], $atts));
+    
+    $email = null;
+    $user_ID = (int)wp_get_current_user()->ID;
+    
+    if ($user_ID > 0) {
+        $email = wp_get_current_user()->user_email;
+        if ($user_ID == 1) return do_shortcode($content); // 管理员豁免
+    } else if (isset($_COOKIE['comment_author_email_' . COOKIEHASH])) {
+        $email = str_replace('%40', '@', $_COOKIE['comment_author_email_' . COOKIEHASH]);
+    }
+    
+    if ($email) {
+        // 调用 functions.php 中的验证函数
+        if (function_exists('pf_user_has_approved_comment_in_post')) {
+            if (pf_user_has_approved_comment_in_post(get_the_ID(), $email)) {
+                return do_shortcode($content);
+            }
+        }
+    }
+    return $notice;
+});
+
+/**
+ * [video img="封面图"]视频地址[/video] 原生视频播放
+ */
+add_shortcode('video', function($atts, $content = null) {
+    extract(shortcode_atts(['img' => ''], $atts));
+    return '<div class="ni-video-wrap"><video src="' . trim($content) . '" poster="' . $img . '" controls="controls" style="width:100%; border-radius:8px;"></video></div>';
+});
+
+/**
+ * [fmt] 图文格式化短代码 (兼容老文章)
+ */
+add_shortcode('fmt', 'shortCodeArticleFormat');
